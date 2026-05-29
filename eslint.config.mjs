@@ -4,6 +4,9 @@ const config = [
   ...nextVitals,
   {
     ignores: ['.next/**', 'node_modules/**'],
+    rules: {
+      '@next/next/no-page-custom-font': 'off',
+    },
   },
 ]
 

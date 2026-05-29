@@ -29,35 +29,35 @@ export default function AccessRequestPage() {
       return
     }
 
-    setMessage('Solicitacao enviada para aprovacao.')
+    setMessage('Solicitacao enviada. O admin Shopee ira analisar em breve.')
     event.currentTarget.reset()
   }
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'grid',
-      placeItems: 'center',
-      padding: 24,
-      background: '#f6f7f9',
-    }}>
-      <form className="card form" style={{ width: '100%', maxWidth: 520 }} onSubmit={submit}>
-        <div>
-          <h1 style={{ margin: 0 }}>Solicitar acesso</h1>
-          <p className="muted">Seu pedido sera avaliado por um administrador.</p>
+    <main className="login-screen">
+      <form className="login-card" style={{ width: 620 }} onSubmit={submit}>
+        <div className="login-logo">
+          <div className="login-badge">SPX</div>
+          <div>
+            <div className="login-title">Solicitar acesso</div>
+            <div className="login-sub">Um admin Shopee ira revisar e aprovar.</div>
+          </div>
         </div>
-        <div className="form-grid">
-          <label className="field">Nome<input name="nome" required /></label>
-          <label className="field">E-mail<input name="email" type="email" required /></label>
-          <label className="field">Empresa<input name="empresa" required /></label>
-          <label className="field">Setor<input name="setor" /></label>
+        <div className="fgrid" style={{ marginBottom: 14 }}>
+          <div><label className="flabel">Nome completo<span className="req">*</span></label><input name="nome" placeholder="Seu nome" required /></div>
+          <div><label className="flabel">E-mail<span className="req">*</span></label><input name="email" type="email" placeholder="seu@empresa.com" required /></div>
+          <div><label className="flabel">Empresa (3PL)<span className="req">*</span></label><input name="empresa" placeholder="LOSUNG" required /></div>
+          <div><label className="flabel">Setor</label><input name="setor" placeholder="Operacional" /></div>
         </div>
-        <label className="field">Justificativa<textarea name="justificativa" /></label>
-        {error ? <p className="error">{error}</p> : null}
-        {message ? <p className="success">{message}</p> : null}
-        <div className="actions">
-          <button className="button" type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Enviar solicitacao'}</button>
-          <Link className="button secondary" href="/login">Voltar ao login</Link>
+        <div style={{ marginBottom: 16 }}>
+          <label className="flabel">Justificativa de acesso</label>
+          <textarea name="justificativa" rows={2} placeholder="Por que precisa de acesso ao portal?"></textarea>
+        </div>
+        {error ? <div className="alert alert-err on"><i className="ti ti-alert-circle"></i>{error}</div> : null}
+        {message ? <div className="alert alert-ok on"><i className="ti ti-check"></i>{message}</div> : null}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link className="btn btn-ghost" href="/login"><i className="ti ti-arrow-left"></i> Voltar</Link>
+          <button className="btn btn-primary" style={{ flex: 1 }} type="submit" disabled={loading}><i className="ti ti-send"></i> {loading ? 'Enviando...' : 'Enviar solicitacao'}</button>
         </div>
       </form>
     </main>

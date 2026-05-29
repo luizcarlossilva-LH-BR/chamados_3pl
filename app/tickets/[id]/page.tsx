@@ -86,14 +86,14 @@ export default function TicketDetailPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell title={ticket?.id || 'Chamado'}>
       <section className="page">
         <header className="page-header">
           <div>
             <h1>{ticket?.id || 'Chamado'}</h1>
             <p className="muted">{ticket ? `${ticket.empresa} - ${ticket.categoria || ticket.tipo}` : 'Carregando...'}</p>
           </div>
-          {ticket ? <span className="badge">{ticket.status}</span> : null}
+          {ticket ? <span className={`badge b-${ticket.status}`}>{ticket.status}</span> : null}
         </header>
 
         {error ? <p className="error">{error}</p> : null}
@@ -104,21 +104,21 @@ export default function TicketDetailPage() {
         {ticket ? (
           <>
             <div className="card grid">
+              <div className="detail-panel">
+                <strong>{ticket.categoria || ticket.tipo}</strong>
+                <p style={{ marginTop: 6 }}>{ticket.descricao}</p>
+              </div>
               <div className="form-grid">
-                <div><strong>Solicitante</strong><p>{ticket.nome} ({ticket.email})</p></div>
-                <div><strong>Impacto</strong><p>{ticket.impacto}</p></div>
-                <div><strong>Setor</strong><p>{ticket.setor || '-'}</p></div>
-                <div><strong>Responsavel</strong><p>{ticket.responsavel || '-'}</p></div>
-                <div><strong>SLA</strong><p>{ticket.sla || '-'}</p></div>
-                <div><strong>Periodo</strong><p>{ticket.periodo || '-'}</p></div>
-                <div><strong>Rotas</strong><p>{ticket.rotas || '-'}</p></div>
-                <div><strong>Drivers</strong><p>{ticket.drivers || '-'}</p></div>
+                <div className="info-row"><span className="info-label">Solicitante</span><strong>{ticket.nome}</strong></div>
+                <div className="info-row"><span className="info-label">E-mail</span><strong>{ticket.email}</strong></div>
+                <div className="info-row"><span className="info-label">Impacto</span><span className={`badge b-${ticket.impacto}`}>{ticket.impacto}</span></div>
+                <div className="info-row"><span className="info-label">Setor</span><strong>{ticket.setor || '-'}</strong></div>
+                <div className="info-row"><span className="info-label">Responsavel</span><strong>{ticket.responsavel || '-'}</strong></div>
+                <div className="info-row"><span className="info-label">SLA</span><strong>{ticket.sla || '-'}</strong></div>
+                <div className="info-row"><span className="info-label">Rotas</span><strong>{ticket.rotas || '-'}</strong></div>
+                <div className="info-row"><span className="info-label">Drivers</span><strong>{ticket.drivers || '-'}</strong></div>
               </div>
-              <div>
-                <strong>Descricao</strong>
-                <p>{ticket.descricao}</p>
-              </div>
-              {ticket.evidencia ? <a className="button secondary" href={ticket.evidencia} target="_blank">Abrir evidencia</a> : null}
+              {ticket.evidencia ? <a className="btn" href={ticket.evidencia} target="_blank"><i className="ti ti-paperclip"></i> Abrir evidencia</a> : null}
             </div>
 
             <form className="card form" onSubmit={action}>
@@ -138,16 +138,23 @@ export default function TicketDetailPage() {
                 <label className="field">SLA<input name="sla" placeholder="DD/MM/AAAA" /></label>
               </div>
               <label className="field">Mensagem<textarea name="msg" /></label>
-              <button className="button" type="submit">Atualizar chamado</button>
+              <button className="btn btn-primary" type="submit"><i className="ti ti-refresh"></i> Atualizar chamado</button>
             </form>
 
             <div className="card grid">
-              <h2 style={{ margin: 0 }}>Timeline</h2>
+              <div className="card-title" style={{ margin: 0 }}><i className="ti ti-history"></i> Timeline</div>
               {ticket.timeline?.length ? ticket.timeline.map((event, index) => (
-                <div key={`${event.ts}-${index}`} style={{ borderTop: index ? '1px solid #e5e7eb' : 0, paddingTop: index ? 12 : 0 }}>
-                  <strong>{event.tipo} - {event.autor}</strong>
-                  <p className="muted">{event.ts} - {event.role}</p>
-                  <p>{event.msg}</p>
+                <div className="tl-item" key={`${event.ts}-${index}`}>
+                  <div className={`tl-dot ${event.tipo === 'fechado' ? 'tl-dot-ok' : event.tipo === 'rejeitado' ? 'tl-dot-err' : event.tipo === 'status' ? 'tl-dot-warn' : event.role === 'admin' || event.role === 'analista' ? 'tl-dot-shopee' : 'tl-dot-system'}`}>
+                    <i className={`ti ${event.tipo === 'fechado' ? 'ti-circle-check' : event.tipo === 'rejeitado' ? 'ti-x' : event.tipo === 'resposta' ? 'ti-message' : 'ti-clock'}`}></i>
+                  </div>
+                  <div className="tl-content">
+                    <div className="tl-header">
+                      <span className="tl-author">{event.tipo} - {event.autor}</span>
+                      <span className="tl-time">{event.ts} - {event.role}</span>
+                    </div>
+                    <div className="tl-body">{event.msg}</div>
+                  </div>
                 </div>
               )) : <p>Nenhum evento registrado.</p>}
             </div>

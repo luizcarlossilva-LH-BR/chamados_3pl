@@ -35,19 +35,22 @@ export default function TicketsPage() {
   const filtered = status ? tickets.filter(ticket => ticket.status === status) : tickets
 
   return (
-    <AppShell>
+    <AppShell title="Chamados">
       <section className="page">
-        <header className="page-header">
-          <div>
-            <h1>Chamados</h1>
-            <p className="muted">Acompanhe e filtre as solicitacoes registradas.</p>
-          </div>
-          <Link className="button" href="/tickets/new">Novo chamado</Link>
-        </header>
+        <div className="filter-bar">
+          <input type="search" placeholder="Buscar ID, 3PL, categoria..." onChange={() => undefined} disabled />
+          <select value={status} onChange={event => setStatus(event.target.value)}>
+            <option value="">Todos os status</option>
+            <option value="aberto">Aberto</option>
+            <option value="andamento">Em andamento</option>
+            <option value="fechado">Fechado</option>
+            <option value="rejeitado">Rejeitado</option>
+          </select>
+          <Link className="btn btn-primary" href="/tickets/new"><i className="ti ti-plus"></i> Novo Chamado</Link>
+        </div>
 
-        <div className="card">
-          <label className="field" style={{ maxWidth: 260 }}>
-            Status
+        <div style={{ display: 'none' }}>
+          <label>
             <select value={status} onChange={event => setStatus(event.target.value)}>
               <option value="">Todos</option>
               <option value="aberto">Aberto</option>
@@ -76,13 +79,13 @@ export default function TicketsPage() {
             <tbody>
               {filtered.map(ticket => (
                 <tr key={ticket.id}>
-                  <td>{ticket.id}</td>
-                  <td>{ticket.empresa}</td>
+                  <td><span className="tid">{ticket.id}</span></td>
+                  <td><span className="cpill">{ticket.empresa}</span></td>
                   <td>{ticket.tipo}</td>
                   <td>{ticket.categoria || '-'}</td>
-                  <td><span className="badge">{ticket.status}</span></td>
+                  <td><span className={`badge b-${ticket.status}`}>{ticket.status}</span></td>
                   <td>{ticket.nome || '-'}</td>
-                  <td><Link className="button secondary" href={`/tickets/${ticket.id}`}>Ver</Link></td>
+                  <td><Link className="btn btn-ghost btn-sm" href={`/tickets/${ticket.id}`}><i className="ti ti-eye"></i></Link></td>
                 </tr>
               ))}
               {!loading && filtered.length === 0 ? (

@@ -68,21 +68,27 @@ export default function NewTicketPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell title="Novo Chamado">
       <section className="page">
-        <header className="page-header">
-          <div>
-            <h1>Novo chamado</h1>
-            <p className="muted">Registre uma solicitacao para acompanhamento do BSC.</p>
-          </div>
-        </header>
-
         <form className="card form" onSubmit={submit}>
+          <div className="steps">
+            <div className="step active"><div className="step-n">1</div><span>Identificacao</span></div>
+            <div className="step-line"></div>
+            <div className="step active"><div className="step-n">2</div><span>Problema</span></div>
+            <div className="step-line"></div>
+            <div className="step active"><div className="step-n">3</div><span>Detalhes</span></div>
+          </div>
+
+          <div className="fsec-title">Dados do solicitante</div>
           <div className="form-grid">
             <label className="field">Empresa<input name="empresa" defaultValue={user?.empresa || ''} required /></label>
             <label className="field">Setor<input name="setor" defaultValue={user?.setor || ''} /></label>
             <label className="field">Nome<input name="nome" defaultValue={user?.nome || ''} required /></label>
             <label className="field">E-mail<input name="email" type="email" defaultValue={user?.email || ''} required /></label>
+          </div>
+
+          <div className="fsec-title" style={{ marginTop: 8 }}>Tipo e impacto</div>
+          <div className="form-grid">
             <label className="field">Tipo
               <select name="tipo" defaultValue="erro">
                 <option value="erro">Erro</option>
@@ -99,6 +105,10 @@ export default function NewTicketPage() {
             </label>
             <label className="field">Categoria<input name="categoria" /></label>
             <label className="field">KPIs<input name="kpis" placeholder="Training, ETA Destino" /></label>
+          </div>
+
+          <div className="fsec-title" style={{ marginTop: 8 }}>Detalhes do problema</div>
+          <div className="form-grid">
             <label className="field">Periodo<input name="periodo" placeholder="W35" /></label>
             <label className="field">Rotas<input name="rotas" /></label>
             <label className="field">Drivers<input name="drivers" /></label>
@@ -110,7 +120,7 @@ export default function NewTicketPage() {
           {error ? <p className="error">{error}</p> : null}
 
           <div className="actions">
-            <button className="button" type="submit" disabled={loading}>{loading ? 'Salvando...' : 'Criar chamado'}</button>
+            <button className="btn btn-primary" type="submit" disabled={loading}><i className="ti ti-send"></i> {loading ? 'Salvando...' : 'Criar chamado'}</button>
           </div>
         </form>
       </section>

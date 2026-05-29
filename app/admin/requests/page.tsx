@@ -52,19 +52,16 @@ export default function AdminRequestsPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell title="Solicitacoes">
       <section className="page">
-        <header className="page-header">
-          <div>
-            <h1>Solicitacoes</h1>
-            <p className="muted">Aprove ou recuse pedidos de acesso.</p>
-          </div>
-        </header>
-
         {error ? <p className="error">{error}</p> : null}
         {message ? <p className="success">{message}</p> : null}
 
-        <div className="table-wrap">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)' }}>
+            <div className="card-title" style={{ margin: 0 }}><i className="ti ti-user-plus"></i> Solicitacoes pendentes</div>
+          </div>
+        <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
           <table>
             <thead>
               <tr>
@@ -80,13 +77,13 @@ export default function AdminRequestsPage() {
                 <tr key={request.id}>
                   <td>{request.nome}</td>
                   <td>{request.email}</td>
-                  <td>{request.empresa}</td>
-                  <td><span className="badge">{request.status}</span></td>
+                  <td><span className="cpill">{request.empresa}</span></td>
+                  <td><span className={`badge b-${request.status}`}>{request.status}</span></td>
                   <td>
                     {request.status === 'pendente' ? (
                       <div className="actions">
-                        <button className="button" type="button" onClick={() => decide(request.id, 'aprovar')}>Aprovar</button>
-                        <button className="button danger" type="button" onClick={() => decide(request.id, 'recusar')}>Recusar</button>
+                        <button className="btn btn-success btn-sm" type="button" onClick={() => decide(request.id, 'aprovar')}><i className="ti ti-check"></i> Aprovar</button>
+                        <button className="btn btn-danger btn-sm" type="button" onClick={() => decide(request.id, 'recusar')}><i className="ti ti-x"></i> Recusar</button>
                       </div>
                     ) : null}
                   </td>
@@ -94,6 +91,7 @@ export default function AdminRequestsPage() {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </section>
     </AppShell>

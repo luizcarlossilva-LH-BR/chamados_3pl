@@ -1,8 +1,15 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
 import Link from 'next/link'
+import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
+
+const demoUsers = [
+  { email: 'admin@shopee.com', senha: 'admin123', label: 'Admin', className: 'role-admin' },
+  { email: 'analista@shopee.com', senha: 'analista123', label: 'Analista', className: 'role-analista' },
+  { email: 'supervisor@losung.com', senha: 'losung123', label: 'Supervisor 3PL', className: 'role-supervisor' },
+  { email: 'operador@losung.com', senha: 'op123', label: 'Operador 3PL', className: 'role-operador' },
+]
 
 export default function LoginPage() {
   const router = useRouter()
@@ -34,78 +41,45 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{
-      minHeight: '100vh',
-      display: 'grid',
-      placeItems: 'center',
-      padding: 24,
-      background: '#f6f7f9',
-      fontFamily: 'Arial, sans-serif',
-      color: '#1f2937',
-    }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: '100%',
-          maxWidth: 380,
-          display: 'grid',
-          gap: 14,
-          padding: 24,
-          border: '1px solid #e5e7eb',
-          borderRadius: 8,
-          background: '#ffffff',
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0, fontSize: 26 }}>3PL Chamados</h1>
-          <p style={{ margin: '8px 0 0', color: '#6b7280' }}>Acesse o portal BSC.</p>
+    <main className="login-screen">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <div className="login-logo">
+          <div className="login-badge">SPX</div>
+          <div>
+            <div className="login-title">3PL Chamados</div>
+            <div className="login-sub">BSC Support Portal - Shopee</div>
+          </div>
         </div>
 
-        <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
-          E-mail
-          <input
-            value={email}
-            onChange={event => setEmail(event.target.value)}
-            type="email"
-            autoComplete="email"
-            required
-            style={{ height: 40, padding: '0 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
-          />
-        </label>
+        <div className="login-demo">
+          <div className="login-demo-title">Contas de demonstracao</div>
+          {demoUsers.map(user => (
+            <div className="demo-user" key={user.email}>
+              <span><strong>{user.email}</strong></span>
+              <span className={`role ${user.className}`}>{user.label}</span>
+              <button className="demo-btn" type="button" onClick={() => { setEmail(user.email); setSenha(user.senha) }}>Usar</button>
+            </div>
+          ))}
+        </div>
 
-        <label style={{ display: 'grid', gap: 6, fontSize: 14 }}>
-          Senha
-          <input
-            value={senha}
-            onChange={event => setSenha(event.target.value)}
-            type="password"
-            autoComplete="current-password"
-            required
-            style={{ height: 40, padding: '0 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
-          />
-        </label>
+        <div style={{ marginBottom: 14 }}>
+          <label className="flabel">E-mail</label>
+          <input value={email} onChange={event => setEmail(event.target.value)} type="email" placeholder="seu@email.com" />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label className="flabel">Senha</label>
+          <input value={senha} onChange={event => setSenha(event.target.value)} type="password" placeholder="********" />
+        </div>
 
-        {error ? <p style={{ margin: 0, color: '#b91c1c', fontSize: 14 }}>{error}</p> : null}
+        {error ? <div className="alert alert-err on"><i className="ti ti-alert-circle"></i><span>{error}</span></div> : null}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            height: 42,
-            border: 0,
-            borderRadius: 6,
-            background: '#EE4D2D',
-            color: '#ffffff',
-            fontWeight: 700,
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
+        <button className="btn btn-primary btn-full" disabled={loading} type="submit">
+          <i className="ti ti-login"></i> {loading ? 'Entrando...' : 'Entrar'}
         </button>
 
-        <Link href="/access-request" style={{ color: '#ee4d2d', fontSize: 14, textAlign: 'center' }}>
-          Solicitar acesso
-        </Link>
+        <div className="divider"></div>
+        <p style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', marginBottom: 12 }}>Nao tem conta? Solicite acesso:</p>
+        <Link className="btn btn-full" href="/access-request"><i className="ti ti-user-plus"></i> Solicitar acesso</Link>
       </form>
     </main>
   )

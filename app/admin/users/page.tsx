@@ -54,20 +54,13 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell title="Gestao de Usuarios">
       <section className="page">
-        <header className="page-header">
-          <div>
-            <h1>Usuarios</h1>
-            <p className="muted">Gerencie acessos ao portal.</p>
-          </div>
-        </header>
-
         {error ? <p className="error">{error}</p> : null}
         {message ? <p className="success">{message}</p> : null}
 
         <form className="card form" onSubmit={create}>
-          <h2 style={{ margin: 0 }}>Novo usuario</h2>
+          <div className="card-title"><i className="ti ti-user-plus"></i> Novo usuario</div>
           <div className="form-grid">
             <label className="field">Nome<input name="nome" required /></label>
             <label className="field">E-mail<input name="email" type="email" required /></label>
@@ -83,10 +76,14 @@ export default function AdminUsersPage() {
             <label className="field">Empresa<input name="empresa" defaultValue="Shopee" /></label>
             <label className="field">Setor<input name="setor" /></label>
           </div>
-          <button className="button" type="submit">Criar usuario</button>
+          <button className="btn btn-primary" type="submit"><i className="ti ti-plus"></i> Criar usuario</button>
         </form>
 
-        <div className="table-wrap">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)' }}>
+            <div className="card-title" style={{ margin: 0 }}><i className="ti ti-users"></i> Usuarios ativos</div>
+          </div>
+        <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
           <table>
             <thead>
               <tr>
@@ -102,13 +99,14 @@ export default function AdminUsersPage() {
                 <tr key={user.id}>
                   <td>{user.nome}</td>
                   <td>{user.email}</td>
-                  <td>{user.role}</td>
-                  <td>{user.empresa}</td>
-                  <td>{user.ativo ? 'Ativo' : 'Inativo'}</td>
+                  <td><span className={`role role-${user.role}`}>{user.role}</span></td>
+                  <td><span className="cpill">{user.empresa}</span></td>
+                  <td><span className={`badge ${user.ativo ? 'b-fechado' : 'b-rejeitado'}`}>{user.ativo ? 'Ativo' : 'Inativo'}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </section>
     </AppShell>
