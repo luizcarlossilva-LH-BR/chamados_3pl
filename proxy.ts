@@ -26,7 +26,7 @@ export async function proxy(req: NextRequest) {
 
   if (!token) {
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 })
+      return NextResponse.json({ ok: false, error: 'Nao autenticado.' }, { status: 401 })
     }
     return NextResponse.redirect(new URL('/login', req.url))
   }
@@ -47,7 +47,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next()
   } catch {
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ ok: false, error: 'Sessão inválida.' }, { status: 401 })
+      return NextResponse.json({ ok: false, error: 'Sessao invalida.' }, { status: 401 })
     }
     return NextResponse.redirect(new URL('/login', req.url))
   }
