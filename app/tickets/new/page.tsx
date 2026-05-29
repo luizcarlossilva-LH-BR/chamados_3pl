@@ -11,6 +11,26 @@ type SessionUser = {
   setor: string
 }
 
+const KPI_OPTIONS = [
+  'BSC Geral',
+  'CPT',
+  'ETA Destino',
+  'No Show',
+  'Plano de Acao',
+  'SPOT / Tendencia',
+  'Telemetria',
+  'Training',
+]
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo.'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function NewTicketPage() {
   const router = useRouter()
   const [user, setUser] = useState<SessionUser | null>(null)
@@ -30,25 +50,33 @@ export default function NewTicketPage() {
     setLoading(true)
     setError('')
     const form = new FormData(event.currentTarget)
-    const kpis = String(form.get('kpis') || '')
-      .split(',')
-      .map(item => item.trim())
-      .filter(Boolean)
+    const kpi = String(form.get('kpis') || '')
+    const file = form.get('evidenciaArquivo')
+    let evidencia = String(form.get('evidencia') || '')
+
+    if (file instanceof File && file.size > 0) {
+      if (file.size > 35_000) {
+        setError('A evidencia deve ter ate 35 KB para ser salva no Sheets. Use um link para arquivos maiores.')
+        setLoading(false)
+        return
+      }
+      evidencia = await fileToDataUrl(file)
+    }
 
     const body = {
-      empresa: form.get('empresa'),
-      setor: form.get('setor'),
+      empresa: user?.empresa || form.get('empresa'),
+      setor: user?.setor || form.get('setor'),
       tipo: form.get('tipo'),
       categoria: form.get('categoria'),
       impacto: form.get('impacto'),
       descricao: form.get('descricao'),
-      evidencia: form.get('evidencia'),
+      evidencia,
       periodo: form.get('periodo'),
       rotas: form.get('rotas'),
       drivers: form.get('drivers'),
-      email: form.get('email'),
-      nome: form.get('nome'),
-      kpis,
+      email: user?.email || form.get('email'),
+      nome: user?.nome || form.get('nome'),
+      kpis: kpi ? [kpi] : [],
     }
 
     const res = await fetch('/api/tickets', {
@@ -81,10 +109,10 @@ export default function NewTicketPage() {
 
           <div className="fsec-title">Dados do solicitante</div>
           <div className="form-grid">
-            <label className="field">Empresa<input name="empresa" defaultValue={user?.empresa || ''} required /></label>
-            <label className="field">Setor<input name="setor" defaultValue={user?.setor || ''} /></label>
-            <label className="field">Nome<input name="nome" defaultValue={user?.nome || ''} required /></label>
-            <label className="field">E-mail<input name="email" type="email" defaultValue={user?.email || ''} required /></label>
+            <label className="field">Empresa<input name="empresa" value={user?.empresa || ''} readOnly required /></label>
+            <label className="field">Setor<input name="setor" value={user?.setor || ''} readOnly /></label>
+            <label className="field">Nome<input name="nome" value={user?.nome || ''} readOnly required /></label>
+            <label className="field">E-mail<input name="email" type="email" value={user?.email || ''} readOnly required /></label>
           </div>
 
           <div className="fsec-title" style={{ marginTop: 8 }}>Tipo e impacto</div>
@@ -103,8 +131,13 @@ export default function NewTicketPage() {
                 <option value="baixo">Baixo</option>
               </select>
             </label>
-            <label className="field">Categoria<input name="categoria" /></label>
-            <label className="field">KPIs<input name="kpis" placeholder="Training, ETA Destino" /></label>
+            <label className="field">Assunto/Categoria<input name="categoria" /></label>
+            <label className="field">KPI
+              <select name="kpis" defaultValue="">
+                <option value="">Selecione...</option>
+                {KPI_OPTIONS.map(kpi => <option key={kpi} value={kpi}>{kpi}</option>)}
+              </select>
+            </label>
           </div>
 
           <div className="fsec-title" style={{ marginTop: 8 }}>Detalhes do problema</div>
@@ -112,7 +145,8 @@ export default function NewTicketPage() {
             <label className="field">Periodo<input name="periodo" placeholder="W35" /></label>
             <label className="field">Rotas<input name="rotas" /></label>
             <label className="field">Drivers<input name="drivers" /></label>
-            <label className="field">Evidencia<input name="evidencia" placeholder="https://..." /></label>
+            <label className="field">Link da evidencia<input name="evidencia" placeholder="https://..." /></label>
+            <label className="field">Upload da evidencia<input name="evidenciaArquivo" type="file" accept="image/*,.pdf,.txt,.csv,.xlsx" /><span className="fhint">Arquivos ate 35 KB ficam salvos no Sheets. Para arquivos maiores, use link.</span></label>
           </div>
 
           <label className="field">Descricao<textarea name="descricao" required /></label>

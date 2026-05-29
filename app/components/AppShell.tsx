@@ -70,6 +70,7 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
     if (title) return title
     if (pathname.startsWith('/tickets/new')) return 'Novo Chamado'
     if (pathname.startsWith('/tickets')) return 'Chamados'
+    if (pathname.startsWith('/account')) return 'Minha Conta'
     if (pathname.startsWith('/admin')) return 'Gestao de Usuarios'
     return 'Dashboard'
   }, [pathname, title])
@@ -115,8 +116,8 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
             <i className="ti ti-list-details"></i> Chamados
             <span className="sb-badge">{openCount}</span>
           </Link>
-          <Link className={`sb-item ${active('/analytics') ? 'active' : ''}`} href="/dashboard">
-            <i className="ti ti-chart-histogram"></i> Analises
+          <Link className={`sb-item ${active('/account') ? 'active' : ''}`} href="/account">
+            <i className="ti ti-user-cog"></i> Minha Conta
           </Link>
 
           {user?.role === 'admin' ? (

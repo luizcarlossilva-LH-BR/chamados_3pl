@@ -11,13 +11,37 @@ type Ticket = {
   impacto: string
   categoria: string
   descricao: string
+  responsavel: string
   criadoEm: string
+  atualizadoEm: string
+}
+
+function parseDate(value: string) {
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) ? time : null
+}
+
+function formatHours(hours: number | null) {
+  if (hours === null) return '-'
+  if (hours < 24) return `${hours.toFixed(1)}h`
+  return `${(hours / 24).toFixed(1)}d`
+}
+
+function topCounts(tickets: Ticket[], keyFn: (ticket: Ticket) => string) {
+  const count: Record<string, number> = {}
+  tickets.forEach(ticket => {
+    const key = keyFn(ticket) || 'Nao informado'
+    count[key] = (count[key] || 0) + 1
+  })
+  return Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 6)
 }
 
 export default function DashboardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [periodStart, setPeriodStart] = useState('')
+  const [periodEnd, setPeriodEnd] = useState('')
 
   useEffect(() => {
     fetch('/api/tickets')
@@ -30,27 +54,71 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const byCategory = useMemo(() => {
-    const count: Record<string, number> = {}
-    tickets.forEach(ticket => {
-      const key = ticket.categoria || 'Sem categoria'
-      count[key] = (count[key] || 0) + 1
+  const filteredTickets = useMemo(() => {
+    const start = periodStart ? new Date(`${periodStart}T00:00:00`).getTime() : null
+    const end = periodEnd ? new Date(`${periodEnd}T23:59:59`).getTime() : null
+
+    return tickets.filter(ticket => {
+      const created = parseDate(ticket.criadoEm)
+      if (created === null) return !start && !end
+      if (start && created < start) return false
+      if (end && created > end) return false
+      return true
     })
-    return Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 6)
-  }, [tickets])
+  }, [tickets, periodStart, periodEnd])
+
+  const byEmpresa = useMemo(() => topCounts(filteredTickets, ticket => ticket.empresa), [filteredTickets])
+  const byResponsavel = useMemo(() => topCounts(filteredTickets, ticket => ticket.responsavel || 'Sem responsavel'), [filteredTickets])
+  const byAssunto = useMemo(() => topCounts(filteredTickets, ticket => ticket.categoria || ticket.descricao.slice(0, 28)), [filteredTickets])
 
   const stats = useMemo(() => {
     return {
-      total: tickets.length,
-      abertos: tickets.filter(t => t.status === 'aberto').length,
-      andamento: tickets.filter(t => t.status === 'andamento').length,
-      fechados: tickets.filter(t => t.status === 'fechado').length,
+      total: filteredTickets.length,
+      abertos: filteredTickets.filter(t => t.status === 'aberto').length,
+      andamento: filteredTickets.filter(t => t.status === 'andamento').length,
+      fechados: filteredTickets.filter(t => t.status === 'fechado').length,
     }
-  }, [tickets])
+  }, [filteredTickets])
+
+  const avgHandling = useMemo(() => {
+    const durations = filteredTickets
+      .filter(ticket => ['fechado', 'rejeitado'].includes(ticket.status))
+      .map(ticket => {
+        const created = parseDate(ticket.criadoEm)
+        const updated = parseDate(ticket.atualizadoEm)
+        if (created === null || updated === null || updated < created) return null
+        return (updated - created) / 36e5
+      })
+      .filter((value): value is number => value !== null)
+
+    if (!durations.length) return null
+    return durations.reduce((sum, value) => sum + value, 0) / durations.length
+  }, [filteredTickets])
+
+  function renderBars(data: [string, number][], color = '#EE4D2D') {
+    const max = Math.max(...data.map(([, value]) => value), 1)
+    return data.length ? data.map(([label, value]) => (
+      <div className="barh" key={label}>
+        <div className="barh-lbl">{label}</div>
+        <div className="barh-track">
+          <div className="barh-fill" style={{ width: `${Math.round(value / max * 100)}%`, background: color }}>{value}</div>
+        </div>
+        <div className="barh-val">{value}</div>
+      </div>
+    )) : <p className="muted">Sem dados no periodo.</p>
+  }
 
   return (
     <AppShell title="Dashboard">
       <section className="page">
+        <div className="card">
+          <div className="filter-bar" style={{ marginBottom: 0 }}>
+            <label className="field" style={{ maxWidth: 180 }}>Criado de<input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
+            <label className="field" style={{ maxWidth: 180 }}>Criado ate<input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
+            <button className="btn" type="button" onClick={() => { setPeriodStart(''); setPeriodEnd('') }}><i className="ti ti-x"></i> Limpar periodo</button>
+          </div>
+        </div>
+
         <div className="metrics-grid">
           <div className="metric">
             <div className="metric-label">Total</div>
@@ -72,39 +140,34 @@ export default function DashboardPage() {
             <div className="metric-value" style={{ color: 'var(--amber)' }}>{loading ? '-' : stats.andamento}</div>
             <div className="metric-sub">em analise</div>
           </div>
+          <div className="metric">
+            <div className="metric-label">Tempo medio</div>
+            <div className="metric-value" style={{ color: 'var(--blue)' }}>{loading ? '-' : formatHours(avgHandling)}</div>
+            <div className="metric-sub">atendimento finalizado</div>
+          </div>
         </div>
 
         {error ? <p className="error">{error}</p> : null}
 
         <div className="two-col">
           <div className="card">
-            <div className="card-title"><i className="ti ti-chart-bar"></i> Categorias</div>
-            {byCategory.length ? byCategory.map(([category, value], index) => {
-              const max = Math.max(...byCategory.map(([, v]) => v), 1)
-              const colors = ['#EE4D2D', '#185FA5', '#7A4A0A', '#553C9A', '#2E7D32', '#9B2C2C']
-              return (
-                <div className="barh" key={category}>
-                  <div className="barh-lbl">{category}</div>
-                  <div className="barh-track">
-                    <div className="barh-fill" style={{ width: `${Math.round(value / max * 100)}%`, background: colors[index % colors.length] }}>{value}</div>
-                  </div>
-                  <div className="barh-val">{value}</div>
-                </div>
-              )
-            }) : <p className="muted">Sem dados ainda.</p>}
+            <div className="card-title"><i className="ti ti-building-warehouse"></i> Numeros por 3PL</div>
+            {renderBars(byEmpresa, '#EE4D2D')}
+          </div>
+          <div className="card">
+            <div className="card-title"><i className="ti ti-user-check"></i> Numeros por responsavel</div>
+            {renderBars(byResponsavel, '#1A5FA5')}
+          </div>
+        </div>
+
+        <div className="two-col">
+          <div className="card">
+            <div className="card-title"><i className="ti ti-tag"></i> Numeros por assunto</div>
+            {renderBars(byAssunto, '#553C9A')}
           </div>
           <div className="card">
             <div className="card-title"><i className="ti ti-flame"></i> Status</div>
-            {Object.entries({ aberto: stats.abertos, andamento: stats.andamento, fechado: stats.fechados }).map(([status, value]) => {
-              const max = Math.max(stats.abertos, stats.andamento, stats.fechados, 1)
-              return (
-                <div className="barh" key={status}>
-                  <div className="barh-lbl">{status}</div>
-                  <div className="barh-track"><div className="barh-fill" style={{ width: `${Math.round(value / max * 100)}%`, background: '#EE4D2D' }}>{value}</div></div>
-                  <div className="barh-val">{value}</div>
-                </div>
-              )
-            })}
+            {renderBars(Object.entries({ aberto: stats.abertos, andamento: stats.andamento, fechado: stats.fechados }), '#7A4A0A')}
           </div>
         </div>
 
@@ -119,7 +182,7 @@ export default function DashboardPage() {
                 <tr><th>#</th><th>3PL</th><th>Categoria</th><th>Impacto</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
-                {tickets.slice(0, 8).map(ticket => (
+                {filteredTickets.slice(0, 8).map(ticket => (
                   <tr key={ticket.id}>
                     <td><span className="tid">{ticket.id}</span></td>
                     <td><span className="cpill">{ticket.empresa}</span></td>
@@ -129,7 +192,7 @@ export default function DashboardPage() {
                     <td><Link className="btn btn-ghost btn-sm" href={`/tickets/${ticket.id}`}><i className="ti ti-eye"></i></Link></td>
                   </tr>
                 ))}
-                {!loading && tickets.length === 0 ? (
+                {!loading && filteredTickets.length === 0 ? (
                   <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Nenhum chamado</td></tr>
                 ) : null}
               </tbody>
