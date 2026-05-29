@@ -1,19 +1,15 @@
 /**
- * Google Apps Script — deploy como Web App
- * URL: Executar como "Eu" · Acesso "Qualquer pessoa"
+ * Google Apps Script
  *
- * Este script cria as abas necessárias e serve como
- * endpoint alternativo de escrita (fallback ao Sheets API).
+ * Use este script apenas para preparar a planilha:
+ * - criar as abas
+ * - criar o usuario admin inicial
  *
- * Cole este código em: script.google.com → Novo projeto
- * → Implantar → Web app → Executar como: Eu → Acesso: Qualquer
- *
- * Copie a URL gerada para APPS_SCRIPT_URL no .env
+ * O backend Next.js le e escreve diretamente via Google Sheets API.
  */
 
-const SHEET_ID = 'SEU_SPREADSHEET_ID_AQUI'; // substitua
+const SHEET_ID = 'SEU_SPREADSHEET_ID_AQUI'; // substitua pelo ID real da planilha
 
-// ── Estrutura das abas ──────────────────────────────────
 function setupSheets() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
 
@@ -35,23 +31,26 @@ function setupSheets() {
     let sheet = ss.getSheetByName(name);
     if (!sheet) {
       sheet = ss.insertSheet(name);
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      sheet.getRange(1, 1, 1, headers.length)
-        .setFontWeight('bold')
-        .setBackground('#EE4D2D')
-        .setFontColor('#FFFFFF');
-      sheet.setFrozenRows(1);
     }
+
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#EE4D2D')
+      .setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
   });
 
-  // Seed admin user (senha: admin123)
   const usersSheet = ss.getSheetByName('users');
-  if (usersSheet.getLastRow() < 2) {
+  const rows = usersSheet.getDataRange().getValues();
+  const hasAdmin = rows.some(row => String(row[2]).toLowerCase() === 'admin@shopee.com');
+
+  if (!hasAdmin) {
     usersSheet.appendRow([
       'U001',
       'Admin Shopee',
       'admin@shopee.com',
-      '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // senha: admin123 (bcrypt)
+      '$2a$10$Z/RaVRWP8B4w3Q7gFOgeoevGXZqxehexjZoASfLhndM6yilrJNRr2', // senha: admin123
       'admin',
       'Shopee',
       'BSC Team',
@@ -61,40 +60,10 @@ function setupSheets() {
     Logger.log('Admin user created.');
   }
 
-  Logger.log('Sheets configurados com sucesso!');
+  Logger.log('Sheets configurados com sucesso.');
 }
 
-// ── Web App entrypoint ──────────────────────────────────
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const { action, sheet: sheetName, values, rowIndex } = data;
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sheet = ss.getSheetByName(sheetName);
-
-    if (!sheet) {
-      return jsonResponse({ ok: false, error: `Aba "${sheetName}" não encontrada.` });
-    }
-
-    if (action === 'append') {
-      sheet.appendRow(values);
-      return jsonResponse({ ok: true });
-    }
-
-    if (action === 'update') {
-      const range = sheet.getRange(rowIndex, 1, 1, values.length);
-      range.setValues([values]);
-      return jsonResponse({ ok: true });
-    }
-
-    return jsonResponse({ ok: false, error: 'Ação desconhecida.' });
-  } catch (err) {
-    return jsonResponse({ ok: false, error: err.message });
-  }
-}
-
-function doGet(e) {
-  // Health check
+function doGet() {
   return jsonResponse({ ok: true, message: 'Apps Script ativo.' });
 }
 
