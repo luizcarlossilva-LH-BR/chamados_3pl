@@ -1,21 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import AppShell from '@/app/components/AppShell'
 
 type Ticket = {
   id: string
   empresa: string
-  status: string
-  impacto: string
+  tipo: string
   categoria: string
-  descricao: string
+  impacto: string
+  status: string
+  nome: string
   criadoEm: string
 }
 
-export default function DashboardPage() {
+export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -30,31 +32,30 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const stats = useMemo(() => {
-    return {
-      total: tickets.length,
-      abertos: tickets.filter(t => t.status === 'aberto').length,
-      andamento: tickets.filter(t => t.status === 'andamento').length,
-      fechados: tickets.filter(t => t.status === 'fechado').length,
-    }
-  }, [tickets])
+  const filtered = status ? tickets.filter(ticket => ticket.status === status) : tickets
 
   return (
     <AppShell>
       <section className="page">
         <header className="page-header">
           <div>
-            <h1>Dashboard</h1>
-            <p className="muted">Resumo operacional dos chamados.</p>
+            <h1>Chamados</h1>
+            <p className="muted">Acompanhe e filtre as solicitacoes registradas.</p>
           </div>
           <Link className="button" href="/tickets/new">Novo chamado</Link>
         </header>
 
-        <div className="stats">
-          <div className="card stat"><strong>Total</strong><span>{loading ? '...' : stats.total}</span></div>
-          <div className="card stat"><strong>Abertos</strong><span>{loading ? '...' : stats.abertos}</span></div>
-          <div className="card stat"><strong>Em andamento</strong><span>{loading ? '...' : stats.andamento}</span></div>
-          <div className="card stat"><strong>Fechados</strong><span>{loading ? '...' : stats.fechados}</span></div>
+        <div className="card">
+          <label className="field" style={{ maxWidth: 260 }}>
+            Status
+            <select value={status} onChange={event => setStatus(event.target.value)}>
+              <option value="">Todos</option>
+              <option value="aberto">Aberto</option>
+              <option value="andamento">Em andamento</option>
+              <option value="fechado">Fechado</option>
+              <option value="rejeitado">Rejeitado</option>
+            </select>
+          </label>
         </div>
 
         {error ? <p className="error">{error}</p> : null}
@@ -65,25 +66,27 @@ export default function DashboardPage() {
               <tr>
                 <th>ID</th>
                 <th>Empresa</th>
-                <th>Status</th>
-                <th>Impacto</th>
+                <th>Tipo</th>
                 <th>Categoria</th>
+                <th>Status</th>
+                <th>Solicitante</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {tickets.slice(0, 8).map(ticket => (
+              {filtered.map(ticket => (
                 <tr key={ticket.id}>
                   <td>{ticket.id}</td>
                   <td>{ticket.empresa}</td>
-                  <td><span className="badge">{ticket.status}</span></td>
-                  <td>{ticket.impacto}</td>
+                  <td>{ticket.tipo}</td>
                   <td>{ticket.categoria || '-'}</td>
-                  <td><Link className="button secondary" href={`/tickets/${ticket.id}`}>Abrir</Link></td>
+                  <td><span className="badge">{ticket.status}</span></td>
+                  <td>{ticket.nome || '-'}</td>
+                  <td><Link className="button secondary" href={`/tickets/${ticket.id}`}>Ver</Link></td>
                 </tr>
               ))}
-              {!loading && tickets.length === 0 ? (
-                <tr><td colSpan={6}>Nenhum chamado encontrado.</td></tr>
+              {!loading && filtered.length === 0 ? (
+                <tr><td colSpan={7}>Nenhum chamado encontrado.</td></tr>
               ) : null}
             </tbody>
           </table>

@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -101,6 +102,10 @@ export default function LoginPage() {
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
+
+        <Link href="/access-request" style={{ color: '#ee4d2d', fontSize: 14, textAlign: 'center' }}>
+          Solicitar acesso
+        </Link>
       </form>
     </main>
   )
