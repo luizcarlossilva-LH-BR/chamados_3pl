@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, isAdmin } from '@/lib/auth'
 import { updateUser } from '@/lib/sheets'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+type Params = { params: Promise<{ id: string }> }
+
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const { id } = await params
   const session = await getSession()
   if (!session) return NextResponse.json({ ok: false, error: 'Não autenticado.' }, { status: 401 })
   if (!isAdmin(session.role)) return NextResponse.json({ ok: false, error: 'Acesso negado.' }, { status: 403 })
@@ -17,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ ok: false, error: 'Nenhum campo para atualizar.' }, { status: 400 })
     }
 
-    const updated = await updateUser(params.id, patch)
+    const updated = await updateUser(id, patch)
     if (!updated) return NextResponse.json({ ok: false, error: 'Usuário não encontrado.' }, { status: 404 })
 
     const { senha: _, ...safe } = updated
