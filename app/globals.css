@@ -186,11 +186,33 @@ select{cursor:pointer}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
+@media(min-width:641px){
+  .menu-toggle{display:none}
+}
+
 @media(max-width:980px){
   .app-layout{display:block;height:auto;min-height:100vh;overflow:auto}
   .sidebar{width:100%;min-width:0;height:auto;min-height:auto}
   .main{overflow:visible}
   .content{overflow:visible;padding:18px}
-  .metrics-grid,.stats,.two-col,.fgrid,.form-grid,.fgrid-3{grid-template-columns:1fr}
+  .metrics-grid,.stats{grid-template-columns:1fr 1fr}
+  .two-col,.fgrid,.form-grid,.fgrid-3{grid-template-columns:1fr}
   .topbar{height:auto;min-height:58px;padding:14px 18px;align-items:flex-start}
+}
+
+@media(max-width:640px){
+  .app-layout{position:relative}
+  .sidebar{display:none;position:fixed;top:0;left:0;z-index:200;height:100%;width:80%;max-width:280px;overflow-y:auto;min-height:unset}
+  .app-layout.sidebar-open .sidebar{display:flex;flex-direction:column}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:199}
+  .app-layout.sidebar-open .sidebar-overlay{display:block}
+  .main{overflow:visible}
+  .content{overflow:visible;padding:16px}
+  .metrics-grid,.stats{grid-template-columns:1fr}
+  .fgrid-3{grid-template-columns:1fr}
+  .topbar{height:auto;min-height:58px;padding:12px 16px;align-items:center}
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .filter-bar input,.filter-bar select,.filter-bar .btn{width:100%}
+  .page-header{flex-direction:column;align-items:flex-start}
+  .menu-toggle{display:flex}
 }

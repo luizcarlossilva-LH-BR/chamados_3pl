@@ -38,6 +38,11 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
   const [user, setUser] = useState<SessionUser | null>(null)
   const [openCount, setOpenCount] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -86,7 +91,8 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
   }
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout${menuOpen ? ' sidebar-open' : ''}`}>
+      <div className="sidebar-overlay" onClick={() => setMenuOpen(false)} />
       <aside className="sidebar">
         <div className="sb-logo">
           <div className="sb-mark">SPX</div>
@@ -144,6 +150,9 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
 
       <div className="main">
         <header className="topbar">
+          <button className="menu-toggle btn btn-ghost btn-sm" type="button" onClick={() => setMenuOpen(v => !v)} aria-label="Menu">
+            <i className="ti ti-menu-2"></i>
+          </button>
           <div className="topbar-title">{currentTitle}</div>
           <div className="topbar-right">
             <Link className="btn btn-ghost btn-sm" href="/tickets"><i className="ti ti-filter"></i> Filtrar</Link>
