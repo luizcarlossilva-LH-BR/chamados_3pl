@@ -113,8 +113,8 @@ export default function DashboardPage() {
       <section className="page">
         <div className="card">
           <div className="filter-bar" style={{ marginBottom: 0 }}>
-            <label className="field" style={{ maxWidth: 180 }}>Criado de<input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
-            <label className="field" style={{ maxWidth: 180 }}>Criado ate<input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
+            <label className="field filter-field">Criado de<input type="date" value={periodStart} onChange={event => setPeriodStart(event.target.value)} /></label>
+            <label className="field filter-field">Criado ate<input type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} /></label>
             <button className="btn" type="button" onClick={() => { setPeriodStart(''); setPeriodEnd('') }}><i className="ti ti-x"></i> Limpar periodo</button>
           </div>
         </div>
