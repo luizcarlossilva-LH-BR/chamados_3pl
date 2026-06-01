@@ -18,6 +18,7 @@ type Ticket = {
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [status, setStatus] = useState('')
+  const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -32,13 +33,25 @@ export default function TicketsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = status ? tickets.filter(ticket => ticket.status === status) : tickets
+  const filtered = tickets.filter(ticket => {
+    if (status && ticket.status !== status) return false
+    if (query) {
+      const q = query.toLowerCase()
+      return (
+        ticket.id.toLowerCase().includes(q) ||
+        ticket.empresa.toLowerCase().includes(q) ||
+        ticket.categoria.toLowerCase().includes(q) ||
+        ticket.nome.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
 
   return (
     <AppShell title="Chamados">
       <section className="page">
         <div className="filter-bar">
-          <input type="search" placeholder="Buscar ID, 3PL, categoria..." onChange={() => undefined} disabled />
+          <input type="search" placeholder="Buscar ID, 3PL, categoria, solicitante..." value={query} onChange={e => setQuery(e.target.value)} />
           <select value={status} onChange={event => setStatus(event.target.value)}>
             <option value="">Todos os status</option>
             <option value="aberto">Aberto</option>
@@ -47,18 +60,6 @@ export default function TicketsPage() {
             <option value="rejeitado">Rejeitado</option>
           </select>
           <Link className="btn btn-primary" href="/tickets/new"><i className="ti ti-plus"></i> Novo Chamado</Link>
-        </div>
-
-        <div style={{ display: 'none' }}>
-          <label>
-            <select value={status} onChange={event => setStatus(event.target.value)}>
-              <option value="">Todos</option>
-              <option value="aberto">Aberto</option>
-              <option value="andamento">Em andamento</option>
-              <option value="fechado">Fechado</option>
-              <option value="rejeitado">Rejeitado</option>
-            </select>
-          </label>
         </div>
 
         {error ? <p className="error">{error}</p> : null}

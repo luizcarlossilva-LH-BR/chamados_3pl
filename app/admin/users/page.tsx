@@ -13,10 +13,18 @@ type User = {
   ativo: boolean
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin:      'Admin Shopee',
+  analista:   'Analista Shopee',
+  supervisor: 'Supervisor 3PL',
+  operador:   'Operador 3PL',
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [toggling, setToggling] = useState<string | null>(null)
 
   function loadUsers() {
     fetch('/api/users')
@@ -53,6 +61,25 @@ export default function AdminUsersPage() {
     loadUsers()
   }
 
+  async function toggleAtivo(user: User) {
+    setError('')
+    setMessage('')
+    setToggling(user.id)
+    const res = await fetch(`/api/users/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo: !user.ativo }),
+    })
+    const data = await res.json()
+    setToggling(null)
+    if (!res.ok || !data.ok) {
+      setError(data.error || 'Erro ao atualizar usuario.')
+      return
+    }
+    setMessage(`${user.nome} ${!user.ativo ? 'ativado' : 'desativado'}.`)
+    loadUsers()
+  }
+
   return (
     <AppShell title="Gestao de Usuarios">
       <section className="page">
@@ -81,32 +108,44 @@ export default function AdminUsersPage() {
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)' }}>
-            <div className="card-title" style={{ margin: 0 }}><i className="ti ti-users"></i> Usuarios ativos</div>
+            <div className="card-title" style={{ margin: 0 }}><i className="ti ti-users"></i> Usuarios</div>
           </div>
-        <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Perfil</th>
-                <th>Empresa</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user.id}>
-                  <td>{user.nome}</td>
-                  <td>{user.email}</td>
-                  <td><span className={`role role-${user.role}`}>{user.role}</span></td>
-                  <td><span className="cpill">{user.empresa}</span></td>
-                  <td><span className={`badge ${user.ativo ? 'b-fechado' : 'b-rejeitado'}`}>{user.ativo ? 'Ativo' : 'Inativo'}</span></td>
+          <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Perfil</th>
+                  <th>Empresa</th>
+                  <th>Status</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td>{user.nome}</td>
+                    <td style={{ color: 'var(--text3)' }}>{user.email}</td>
+                    <td><span className={`role role-${user.role}`}>{ROLE_LABELS[user.role] ?? user.role}</span></td>
+                    <td><span className="cpill">{user.empresa}</span></td>
+                    <td><span className={`badge ${user.ativo ? 'b-fechado' : 'b-neutro'}`}>{user.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td>
+                      <button
+                        className={`btn btn-sm ${user.ativo ? 'btn-danger' : 'btn-success'}`}
+                        type="button"
+                        disabled={toggling === user.id}
+                        onClick={() => toggleAtivo(user)}
+                      >
+                        <i className={`ti ${user.ativo ? 'ti-user-off' : 'ti-user-check'}`}></i>
+                        {toggling === user.id ? '...' : user.ativo ? 'Desativar' : 'Ativar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </AppShell>

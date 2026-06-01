@@ -33,12 +33,33 @@ type Ticket = {
   timeline: TimelineEvent[]
 }
 
+type ActionConfig = {
+  msgRequired: boolean
+  msgPlaceholder: string
+  showResponsavel: boolean
+  showSla: boolean
+  btnClass: string
+  btnLabel: string
+}
+
+const ACTION_CONFIG: Record<string, ActionConfig> = {
+  responder:  { msgRequired: true,  msgPlaceholder: 'Escreva sua resposta...',                    showResponsavel: false, showSla: false, btnClass: 'btn-primary', btnLabel: 'Responder' },
+  andamento:  { msgRequired: false, msgPlaceholder: 'Comentario (opcional)...',                   showResponsavel: false, showSla: false, btnClass: 'btn-amber',   btnLabel: 'Marcar em andamento' },
+  atribuir:   { msgRequired: false, msgPlaceholder: 'Comentario (opcional)...',                   showResponsavel: true,  showSla: false, btnClass: 'btn-primary', btnLabel: 'Atribuir' },
+  sla:        { msgRequired: false, msgPlaceholder: 'Comentario (opcional)...',                   showResponsavel: false, showSla: true,  btnClass: 'btn-primary', btnLabel: 'Definir SLA' },
+  fechar:     { msgRequired: true,  msgPlaceholder: 'Descreva como o problema foi resolvido...',  showResponsavel: false, showSla: false, btnClass: 'btn-success', btnLabel: 'Fechar chamado' },
+  rejeitar:   { msgRequired: true,  msgPlaceholder: 'Explique o motivo da rejeicao...',           showResponsavel: false, showSla: false, btnClass: 'btn-danger',  btnLabel: 'Rejeitar chamado' },
+}
+
 export default function TicketDetailPage() {
   const params = useParams<{ id: string }>()
   const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [userRole, setUserRole] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [selectedAction, setSelectedAction] = useState('responder')
+  const [submitting, setSubmitting] = useState(false)
 
   function loadTicket() {
     fetch(`/api/tickets/${params.id}`)
@@ -53,6 +74,9 @@ export default function TicketDetailPage() {
 
   useEffect(() => {
     loadTicket()
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => { if (data.ok) setUserRole(data.data.role) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
@@ -60,6 +84,7 @@ export default function TicketDetailPage() {
     event.preventDefault()
     setError('')
     setMessage('')
+    setSubmitting(true)
     const form = new FormData(event.currentTarget)
     const actionName = String(form.get('action'))
     const payload = {
@@ -74,6 +99,7 @@ export default function TicketDetailPage() {
       body: JSON.stringify({ action: actionName, payload }),
     })
     const data = await res.json()
+    setSubmitting(false)
 
     if (!res.ok || !data.ok) {
       setError(data.error || 'Erro ao atualizar chamado.')
@@ -82,8 +108,13 @@ export default function TicketDetailPage() {
 
     setMessage('Chamado atualizado.')
     setTicket(data.data)
+    setSelectedAction('responder')
     event.currentTarget.reset()
   }
+
+  const cfg = ACTION_CONFIG[selectedAction] ?? ACTION_CONFIG.responder
+  const isTerminal = ticket?.status === 'fechado' || ticket?.status === 'rejeitado'
+  const canAct = (userRole === 'admin' || userRole === 'analista') && !isTerminal
 
   return (
     <AppShell title={ticket?.id || 'Chamado'}>
@@ -121,11 +152,12 @@ export default function TicketDetailPage() {
               {ticket.evidencia ? <a className="btn" href={ticket.evidencia} target="_blank"><i className="ti ti-paperclip"></i> Abrir evidencia</a> : null}
             </div>
 
-            <form className="card form" onSubmit={action}>
-              <h2 style={{ margin: 0 }}>Atendimento Shopee</h2>
-              <div className="form-grid">
-                <label className="field">Acao
-                  <select name="action" defaultValue="responder">
+            {canAct ? (
+              <form className="card form" onSubmit={action}>
+                <h2 style={{ margin: 0 }}>Atendimento Shopee</h2>
+
+                <label className="field" style={{ maxWidth: 280 }}>Acao
+                  <select name="action" value={selectedAction} onChange={e => setSelectedAction(e.target.value)}>
                     <option value="responder">Responder</option>
                     <option value="andamento">Marcar em andamento</option>
                     <option value="atribuir">Atribuir</option>
@@ -134,12 +166,40 @@ export default function TicketDetailPage() {
                     <option value="rejeitar">Rejeitar</option>
                   </select>
                 </label>
-                <label className="field">Responsavel<input name="responsavel" /></label>
-                <label className="field">SLA<input name="sla" placeholder="DD/MM/AAAA" /></label>
+
+                {cfg.showResponsavel && (
+                  <label className="field" style={{ maxWidth: 280 }}>
+                    Responsavel <span className="req">*</span>
+                    <input name="responsavel" required />
+                  </label>
+                )}
+
+                {cfg.showSla && (
+                  <label className="field" style={{ maxWidth: 280 }}>
+                    SLA <span className="req">*</span>
+                    <input name="sla" placeholder="DD/MM/AAAA" required />
+                  </label>
+                )}
+
+                <label className="field">
+                  Mensagem{cfg.msgRequired
+                    ? <span className="req"> *</span>
+                    : <span className="muted" style={{ fontWeight: 400 }}> (opcional)</span>}
+                  <textarea name="msg" placeholder={cfg.msgPlaceholder} required={cfg.msgRequired} />
+                </label>
+
+                <div>
+                  <button className={`btn ${cfg.btnClass}`} type="submit" disabled={submitting}>
+                    <i className="ti ti-refresh"></i> {submitting ? 'Salvando...' : cfg.btnLabel}
+                  </button>
+                </div>
+              </form>
+            ) : isTerminal ? (
+              <div className="card" style={{ color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="ti ti-lock" style={{ fontSize: 18 }}></i>
+                Chamado encerrado — nenhuma acao disponivel.
               </div>
-              <label className="field">Mensagem<textarea name="msg" /></label>
-              <button className="btn btn-primary" type="submit"><i className="ti ti-refresh"></i> Atualizar chamado</button>
-            </form>
+            ) : null}
 
             <div className="card grid">
               <div className="card-title" style={{ margin: 0 }}><i className="ti ti-history"></i> Timeline</div>
