@@ -57,11 +57,18 @@ export async function uploadEvidence(input: EvidenceInput) {
     return blob.url
   } catch (err) {
     const message = err instanceof Error ? err.message : ''
+    const cleanMessage = message.replace(/\s+/g, ' ').trim()
 
-    if (message.includes('BLOB_READ_WRITE_TOKEN')) {
+    if (
+      cleanMessage.includes('BLOB_READ_WRITE_TOKEN') ||
+      cleanMessage.toLowerCase().includes('no token found') ||
+      cleanMessage.toLowerCase().includes('missing token')
+    ) {
       throw new EvidenceUploadError('Token do Vercel Blob nao configurado. Verifique BLOB_READ_WRITE_TOKEN no Vercel.')
     }
 
-    throw new EvidenceUploadError('Nao foi possivel enviar a evidencia para o Vercel Blob.')
+    throw new EvidenceUploadError(
+      `Nao foi possivel enviar a evidencia para o Vercel Blob.${cleanMessage ? ` Detalhe: ${cleanMessage.slice(0, 180)}` : ''}`,
+    )
   }
 }
