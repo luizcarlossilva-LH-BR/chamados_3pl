@@ -142,7 +142,11 @@ async function uploadEvidenceWithAppsScript(input: { fileName: string; mimeType:
   try {
     data = JSON.parse(text)
   } catch {
-    throw new DriveUploadError('Apps Script retornou uma resposta invalida no upload da evidencia.')
+    const preview = text.replace(/\s+/g, ' ').trim().slice(0, 180)
+    if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('accounts.google.com')) {
+      throw new DriveUploadError('Apps Script retornou HTML em vez de JSON. Verifique se a URL e do Web App /exec e se o acesso esta como Anyone.')
+    }
+    throw new DriveUploadError(`Apps Script retornou uma resposta invalida no upload da evidencia: ${preview || 'sem conteudo'}`)
   }
 
   if (!res.ok || !data.ok || !data.url) {
