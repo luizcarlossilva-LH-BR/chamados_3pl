@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession, canSeeAllTickets } from '@/lib/auth'
-import { DriveUploadError, isEvidenceDataUrl, uploadEvidenceToDrive } from '@/lib/drive'
+import { EvidenceUploadError, isEvidenceDataUrl, uploadEvidence } from '@/lib/evidence-storage'
 import { getAllTickets, getTicketsByEmpresa, createTicket } from '@/lib/sheets'
 import { asString, asStringArray, isEmail, isTicketImpact, isTicketTipo } from '@/lib/validation'
 import type { TimelineEvent } from '@/types'
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (isEvidenceDataUrl(evidencia)) {
-      evidencia = await uploadEvidenceToDrive({
+      evidencia = await uploadEvidence({
         dataUrl: evidencia,
         fileName: evidenciaArquivoNome,
         fallbackMimeType: evidenciaArquivoTipo,
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, data: ticket }, { status: 201 })
   } catch (err) {
     console.error('[tickets POST]', err)
-    if (err instanceof DriveUploadError) {
+    if (err instanceof EvidenceUploadError) {
       return NextResponse.json({ ok: false, error: err.message }, { status: 400 })
     }
     return NextResponse.json({ ok: false, error: 'Erro ao criar chamado.' }, { status: 500 })
