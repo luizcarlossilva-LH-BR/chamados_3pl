@@ -13,6 +13,8 @@ type SessionUser = {
 
 type TicketTipo = 'erro' | 'acesso' | 'duvida' | 'sugestao'
 
+const MAX_EVIDENCE_UPLOAD_BYTES = 8 * 1024 * 1024
+
 const TIPO_OPTIONS: { value: TicketTipo; label: string }[] = [
   { value: 'erro', label: 'Reportar erro/problema no BSC' },
   { value: 'acesso', label: 'Solicitar acesso ao BSC' },
@@ -184,14 +186,18 @@ export default function NewTicketPage() {
     const form = new FormData(event.currentTarget)
     const file = form.get('evidenciaArquivo')
     let evidencia = value(form, 'evidencia')
+    let evidenciaArquivoNome = ''
+    let evidenciaArquivoTipo = ''
 
     if (file instanceof File && file.size > 0) {
-      if (file.size > 35_000) {
-        setError('A evidencia deve ter ate 35 KB para ser salva no Sheets. Use um link para arquivos maiores.')
+      if (file.size > MAX_EVIDENCE_UPLOAD_BYTES) {
+        setError('A evidencia deve ter ate 8 MB. Use um link do Drive para arquivos maiores.')
         setLoading(false)
         return
       }
       evidencia = await fileToDataUrl(file)
+      evidenciaArquivoNome = file.name
+      evidenciaArquivoTipo = file.type
     }
 
     const kpi = value(form, 'kpis')
@@ -209,6 +215,8 @@ export default function NewTicketPage() {
       impacto: form.get('impacto'),
       descricao: buildStructuredDescription(form, tipo),
       evidencia,
+      evidenciaArquivoNome,
+      evidenciaArquivoTipo,
       periodo: form.get('periodo'),
       rotas: form.get('rotas'),
       drivers: form.get('drivers'),
@@ -385,7 +393,7 @@ export default function NewTicketPage() {
 
           <div className="form-grid">
             <label className="field">Link da evidencia<input name="evidencia" placeholder="https://..." /></label>
-            <label className="field">Upload da evidencia<input name="evidenciaArquivo" type="file" accept="image/*,.pdf,.txt,.csv,.xlsx" /><span className="fhint">Arquivos ate 35 KB ficam salvos no Sheets. Para arquivos maiores, use link.</span></label>
+            <label className="field">Upload da evidencia<input name="evidenciaArquivo" type="file" accept="image/*,.pdf,.txt,.csv,.xlsx" /><span className="fhint">Arquivos ate 8 MB sao enviados ao Drive. Para arquivos maiores, use link.</span></label>
           </div>
 
           {error ? <p className="error">{error}</p> : null}

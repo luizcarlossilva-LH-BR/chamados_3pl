@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession, canSeeAllTickets } from '@/lib/auth'
+import { isEvidenceDataUrl, uploadEvidenceToDrive } from '@/lib/drive'
 import { getAllTickets, getTicketsByEmpresa, createTicket } from '@/lib/sheets'
 import { asString, asStringArray, isEmail, isTicketImpact, isTicketTipo } from '@/lib/validation'
 import type { TimelineEvent } from '@/types'
+
+export const runtime = 'nodejs'
 
 export async function GET() {
   const session = await getSession()
@@ -27,7 +30,9 @@ export async function POST(req: NextRequest) {
     const categoria = asString(body.categoria)
     const impacto = asString(body.impacto) || 'medio'
     const descricao = asString(body.descricao)
-    const evidencia = asString(body.evidencia)
+    let evidencia = asString(body.evidencia)
+    const evidenciaArquivoNome = asString(body.evidenciaArquivoNome) || `evidencia-${Date.now()}`
+    const evidenciaArquivoTipo = asString(body.evidenciaArquivoTipo)
     const periodo = asString(body.periodo)
     const rotas = asString(body.rotas)
     const drivers = asString(body.drivers)
@@ -53,6 +58,14 @@ export async function POST(req: NextRequest) {
 
     if (!canSeeAllTickets(session.role) && empresa !== session.empresa) {
       return NextResponse.json({ ok: false, error: 'Acesso negado.' }, { status: 403 })
+    }
+
+    if (isEvidenceDataUrl(evidencia)) {
+      evidencia = await uploadEvidenceToDrive({
+        dataUrl: evidencia,
+        fileName: evidenciaArquivoNome,
+        fallbackMimeType: evidenciaArquivoTipo,
+      })
     }
 
     const now = new Date().toLocaleString('pt-BR', {
