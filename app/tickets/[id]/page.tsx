@@ -137,7 +137,7 @@ export default function TicketDetailPage() {
             <div className="card grid">
               <div className="detail-panel">
                 <strong>{ticket.categoria || ticket.tipo}</strong>
-                <p style={{ marginTop: 6 }}>{ticket.descricao}</p>
+                <p className="structured-text" style={{ marginTop: 6 }}>{ticket.descricao}</p>
               </div>
               <div className="form-grid">
                 <div className="info-row"><span className="info-label">Solicitante</span><strong>{ticket.nome}</strong></div>

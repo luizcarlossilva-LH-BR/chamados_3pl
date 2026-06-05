@@ -41,10 +41,6 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
-
-  useEffect(() => {
     fetch('/api/auth/me')
       .then(async res => {
         const data = await res.json()
@@ -90,6 +86,10 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
     return pathname.startsWith(path)
   }
 
+  function closeMenu() {
+    setMenuOpen(false)
+  }
+
   return (
     <div className={`app-layout${menuOpen ? ' sidebar-open' : ''}`}>
       <div className="sidebar-overlay" onClick={() => setMenuOpen(false)} />
@@ -112,27 +112,27 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
 
         <nav className="sb-nav">
           <div className="sb-section">Menu</div>
-          <Link className={`sb-item ${active('/dashboard') ? 'active' : ''}`} href="/dashboard">
+          <Link className={`sb-item ${active('/dashboard') ? 'active' : ''}`} href="/dashboard" onClick={closeMenu}>
             <i className="ti ti-layout-dashboard"></i> Dashboard
           </Link>
-          <Link className={`sb-item ${active('/tickets/new') ? 'active' : ''}`} href="/tickets/new">
+          <Link className={`sb-item ${active('/tickets/new') ? 'active' : ''}`} href="/tickets/new" onClick={closeMenu}>
             <i className="ti ti-circle-plus"></i> Novo Chamado
           </Link>
-          <Link className={`sb-item ${active('/tickets') && !active('/tickets/new') ? 'active' : ''}`} href="/tickets">
+          <Link className={`sb-item ${active('/tickets') && !active('/tickets/new') ? 'active' : ''}`} href="/tickets" onClick={closeMenu}>
             <i className="ti ti-list-details"></i> Chamados
             <span className="sb-badge">{openCount}</span>
           </Link>
-          <Link className={`sb-item ${active('/account') ? 'active' : ''}`} href="/account">
+          <Link className={`sb-item ${active('/account') ? 'active' : ''}`} href="/account" onClick={closeMenu}>
             <i className="ti ti-user-cog"></i> Minha Conta
           </Link>
 
           {user?.role === 'admin' ? (
             <>
               <div className="sb-section">Administracao</div>
-              <Link className={`sb-item ${active('/admin/users') ? 'active' : ''}`} href="/admin/users">
+              <Link className={`sb-item ${active('/admin/users') ? 'active' : ''}`} href="/admin/users" onClick={closeMenu}>
                 <i className="ti ti-users"></i> Usuarios
               </Link>
-              <Link className={`sb-item ${active('/admin/requests') ? 'active' : ''}`} href="/admin/requests">
+              <Link className={`sb-item ${active('/admin/requests') ? 'active' : ''}`} href="/admin/requests" onClick={closeMenu}>
                 <i className="ti ti-user-plus"></i> Solicitacoes
                 <span className="sb-badge amber">{pendingCount}</span>
               </Link>

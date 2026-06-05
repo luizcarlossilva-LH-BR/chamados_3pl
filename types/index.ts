@@ -27,7 +27,7 @@ export interface User {
 // ── Ticket ─────────────────────────────────────────────
 export type TicketStatus = 'aberto' | 'andamento' | 'fechado' | 'rejeitado'
 export type TicketImpact = 'alto' | 'medio' | 'baixo'
-export type TicketTipo   = 'erro' | 'acesso' | 'sugestao'
+export type TicketTipo   = 'erro' | 'acesso' | 'duvida' | 'sugestao'
 
 export interface TimelineEvent {
   tipo:   'criado' | 'resposta' | 'status' | 'fechado' | 'rejeitado' | 'atribuido' | 'sla'

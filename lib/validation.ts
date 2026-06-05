@@ -20,7 +20,7 @@ export function isRole(value: string): value is Role {
 }
 
 export function isTicketTipo(value: string): value is TicketTipo {
-  return ['erro', 'acesso', 'sugestao'].includes(value)
+  return ['erro', 'acesso', 'duvida', 'sugestao'].includes(value)
 }
 
 export function isTicketImpact(value: string): value is TicketImpact {

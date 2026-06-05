@@ -174,6 +174,7 @@ select{cursor:pointer}
 .info-row:last-child{border-bottom:none}
 .info-label{color:var(--text3)}
 .detail-panel{background:var(--shopee-l);border-left:4px solid var(--shopee);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin-bottom:16px}
+.structured-text{white-space:pre-wrap}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
 .empty-state i{font-size:40px;display:block;margin-bottom:10px}
 .divider{height:1px;background:var(--border);margin:20px 0}
