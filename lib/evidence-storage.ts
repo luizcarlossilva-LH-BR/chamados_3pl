@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob'
+import { get, put } from '@vercel/blob'
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
@@ -49,7 +49,7 @@ export async function uploadEvidence(input: EvidenceInput) {
 
   try {
     const blob = await put(pathname, buffer, {
-      access: 'public',
+      access: 'private',
       contentType: mimeType,
       addRandomSuffix: true,
     })
@@ -69,6 +69,17 @@ export async function uploadEvidence(input: EvidenceInput) {
 
     throw new EvidenceUploadError(
       `Nao foi possivel enviar a evidencia para o Vercel Blob.${cleanMessage ? ` Detalhe: ${cleanMessage.slice(0, 180)}` : ''}`,
+    )
+  }
+}
+
+export async function getEvidence(url: string) {
+  try {
+    return await get(url, { access: 'private' })
+  } catch (err) {
+    const message = err instanceof Error ? err.message.replace(/\s+/g, ' ').trim() : ''
+    throw new EvidenceUploadError(
+      `Nao foi possivel abrir a evidencia no Vercel Blob.${message ? ` Detalhe: ${message.slice(0, 180)}` : ''}`,
     )
   }
 }

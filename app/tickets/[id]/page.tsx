@@ -149,7 +149,7 @@ export default function TicketDetailPage() {
                 <div className="info-row"><span className="info-label">Rotas</span><strong>{ticket.rotas || '-'}</strong></div>
                 <div className="info-row"><span className="info-label">Drivers</span><strong>{ticket.drivers || '-'}</strong></div>
               </div>
-              {ticket.evidencia ? <a className="btn" href={ticket.evidencia} target="_blank"><i className="ti ti-paperclip"></i> Abrir evidencia</a> : null}
+              {ticket.evidencia ? <a className="btn" href={`/api/evidence/open?ticketId=${encodeURIComponent(ticket.id)}`} target="_blank"><i className="ti ti-paperclip"></i> Abrir evidencia</a> : null}
             </div>
 
             {canAct ? (

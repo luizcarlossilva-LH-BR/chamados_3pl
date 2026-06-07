@@ -4,13 +4,6 @@ import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-const demoUsers = [
-  { email: 'admin@shopee.com', senha: 'admin123', label: 'Admin', className: 'role-admin' },
-  { email: 'analista@shopee.com', senha: 'analista123', label: 'Analista', className: 'role-analista' },
-  { email: 'supervisor@losung.com', senha: 'losung123', label: 'Supervisor 3PL', className: 'role-supervisor' },
-  { email: 'operador@losung.com', senha: 'op123', label: 'Operador 3PL', className: 'role-operador' },
-]
-
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -49,17 +42,6 @@ export default function LoginPage() {
             <div className="login-title">3PL Chamados</div>
             <div className="login-sub">BSC Support Portal - Shopee</div>
           </div>
-        </div>
-
-        <div className="login-demo">
-          <div className="login-demo-title">Contas de demonstracao</div>
-          {demoUsers.map(user => (
-            <div className="demo-user" key={user.email}>
-              <span><strong>{user.email}</strong></span>
-              <span className={`role ${user.className}`}>{user.label}</span>
-              <button className="demo-btn" type="button" onClick={() => { setEmail(user.email); setSenha(user.senha) }}>Usar</button>
-            </div>
-          ))}
         </div>
 
         <div style={{ marginBottom: 14 }}>
