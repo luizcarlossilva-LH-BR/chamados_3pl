@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { getSession, isAdmin } from '@/lib/auth'
 import { getAllAccessRequests, updateAccessRequest, createUser, getUserByEmail } from '@/lib/sheets'
 import { asString } from '@/lib/validation'
+import { sendAccessApprovedEmail } from '@/lib/mailer'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -52,7 +53,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       })
       await updateAccessRequest(id, 'aprovado')
       const { senha: _, ...safeUser } = user
-      return NextResponse.json({ ok: true, data: { user: safeUser, tempSenha } })
+
+      let emailEnviado = true
+      let emailErro: string | undefined
+      try {
+        await sendAccessApprovedEmail({
+          to: request.email,
+          nome: request.nome,
+          email: request.email,
+          senha: tempSenha,
+          appUrl: process.env.NEXT_PUBLIC_APP_URL || '',
+        })
+      } catch (err) {
+        console.error('[access-requests PATCH] falha ao enviar e-mail de acesso', err)
+        emailEnviado = false
+        emailErro = 'Não foi possível enviar o e-mail de acesso.'
+      }
+
+      return NextResponse.json({ ok: true, data: { user: safeUser, tempSenha, emailEnviado, emailErro } })
     }
 
     await updateAccessRequest(id, 'recusado')

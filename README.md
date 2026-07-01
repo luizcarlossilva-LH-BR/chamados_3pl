@@ -33,8 +33,19 @@ As leituras e escritas usam a Google Sheets API via Service Account. O script em
 7. Preencha:
    - `GOOGLE_SHEETS_ID`
    - `GOOGLE_SERVICE_ACCOUNT_JSON`
+   - `GMAIL_SENDER_EMAIL`
    - `JWT_SECRET`
    - `NEXT_PUBLIC_APP_URL`
+
+## E-mail de acesso (Gmail API)
+
+Ao aprovar uma solicitação de cadastro em `/admin/requests`, o sistema envia automaticamente um e-mail ao solicitante com login e senha temporária, usando a Gmail API com a mesma Service Account do Sheets.
+
+1. No [Admin Console do Google Workspace](https://admin.google.com), acesse **Segurança > Controle de API > Delegação em todo o domínio**.
+2. Autorize o `client_id` da Service Account (o mesmo de `GOOGLE_SERVICE_ACCOUNT_JSON`) com o escopo `https://www.googleapis.com/auth/gmail.send`.
+3. Defina `GMAIL_SENDER_EMAIL` com a conta do Workspace que enviará os e-mails (ex.: `luiz.carlossilva@shopee.com`).
+
+Sem a delegação configurada, a aprovação continua funcionando normalmente, mas o e-mail não é enviado — a senha temporária continua sendo exibida na tela como alternativa.
 
 ## Preparar a planilha
 
