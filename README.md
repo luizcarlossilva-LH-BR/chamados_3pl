@@ -33,19 +33,24 @@ As leituras e escritas usam a Google Sheets API via Service Account. O script em
 7. Preencha:
    - `GOOGLE_SHEETS_ID`
    - `GOOGLE_SERVICE_ACCOUNT_JSON`
-   - `GMAIL_SENDER_EMAIL`
+   - `APPS_SCRIPT_EMAIL_URL`
+   - `APPS_SCRIPT_EMAIL_SECRET`
    - `JWT_SECRET`
    - `NEXT_PUBLIC_APP_URL`
 
-## E-mail de acesso (Gmail API)
+## E-mail de acesso (Apps Script)
 
-Ao aprovar uma solicitação de cadastro em `/admin/requests`, o sistema envia automaticamente um e-mail ao solicitante com login e senha temporária, usando a Gmail API com a mesma Service Account do Sheets.
+Ao aprovar uma solicitação de cadastro em `/admin/requests`, o sistema envia automaticamente um e-mail ao solicitante com login e senha temporária, através de um Web App do Google Apps Script (`scripts/apps-script-backend.gs`, função `doPost`). A conta que "Executa" o Web App é quem aparece como remetente — sem precisar de service account, Gmail API ou domain-wide delegation.
 
-1. No [Admin Console do Google Workspace](https://admin.google.com), acesse **Segurança > Controle de API > Delegação em todo o domínio**.
-2. Autorize o `client_id` da Service Account (o mesmo de `GOOGLE_SERVICE_ACCOUNT_JSON`) com o escopo `https://www.googleapis.com/auth/gmail.send`.
-3. Defina `GMAIL_SENDER_EMAIL` com a conta do Workspace que enviará os e-mails (ex.: `luiz.carlossilva@shopee.com`).
+1. Abra o Apps Script vinculado à planilha (Extensões > Apps Script) e cole a versão atualizada de `scripts/apps-script-backend.gs` (já inclui a função `doPost`).
+2. Em **Configurações do projeto > Propriedades do script**, adicione a propriedade `EMAIL_SECRET` com um valor aleatório longo.
+3. Em **Implantar > Nova implantação > Tipo: Aplicativo da Web**:
+   - Executar como: **Eu** (a conta que deve aparecer como remetente, ex.: `luiz.carlossilva@shopee.com`).
+   - Quem tem acesso: **Qualquer pessoa**.
+4. Copie a URL de implantação (termina em `/exec`) e defina em `APPS_SCRIPT_EMAIL_URL`.
+5. Defina `APPS_SCRIPT_EMAIL_SECRET` com o mesmo valor da propriedade `EMAIL_SECRET` do passo 2 — é o que impede qualquer pessoa que descubra a URL pública de mandar e-mail em nome da conta.
 
-Sem a delegação configurada, a aprovação continua funcionando normalmente, mas o e-mail não é enviado — a senha temporária continua sendo exibida na tela como alternativa.
+Sem essas variáveis configuradas, a aprovação continua funcionando normalmente, mas o e-mail não é enviado — a senha temporária continua sendo exibida na tela como alternativa.
 
 ## Preparar a planilha
 

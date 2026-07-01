@@ -67,6 +67,61 @@ function doGet() {
   return jsonResponse({ ok: true, message: 'Apps Script ativo.' });
 }
 
+/**
+ * Envia o e-mail de "acesso liberado" quando uma solicitacao de cadastro
+ * e aprovada no Next.js. Protegido por segredo compartilhado (Propriedades
+ * do script > EMAIL_SECRET) pois a implantacao precisa ser publica
+ * ("Qualquer pessoa") para o backend conseguir chamar sem OAuth.
+ */
+function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var expectedSecret = PropertiesService.getScriptProperties().getProperty('EMAIL_SECRET');
+
+    if (!expectedSecret || payload.secret !== expectedSecret) {
+      return jsonResponse({ ok: false, error: 'unauthorized' });
+    }
+
+    var to = payload.to;
+    var nome = payload.nome;
+    var email = payload.email;
+    var senha = payload.senha;
+    var appUrl = payload.appUrl || '';
+
+    if (!to || !nome || !email || !senha) {
+      return jsonResponse({ ok: false, error: 'missing_fields' });
+    }
+
+    var subject = 'Acesso liberado - 3PL Chamados';
+    var body = [
+      'Ola, ' + nome + '.',
+      '',
+      'Seu cadastro no 3PL Chamados foi aprovado. Seguem os dados de acesso:',
+      '',
+      'Login: ' + email,
+      'Senha temporaria: ' + senha,
+      'Acesse em: ' + appUrl,
+      '',
+      'Recomendamos trocar a senha apos o primeiro acesso.',
+    ].join('\n');
+    var htmlBody = [
+      '<p>Ola, ' + nome + '.</p>',
+      '<p>Seu cadastro no <strong>3PL Chamados</strong> foi aprovado. Seguem os dados de acesso:</p>',
+      '<p>',
+      'Login: <strong>' + email + '</strong><br>',
+      'Senha temporaria: <strong>' + senha + '</strong><br>',
+      'Acesse em: <a href="' + appUrl + '">' + appUrl + '</a>',
+      '</p>',
+      '<p>Recomendamos trocar a senha apos o primeiro acesso.</p>',
+    ].join('');
+
+    MailApp.sendEmail({ to: to, subject: subject, body: body, htmlBody: htmlBody });
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: String(err) });
+  }
+}
+
 function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
