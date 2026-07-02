@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           nome: request.nome,
           email: request.email,
           senha: tempSenha,
-          appUrl: process.env.NEXT_PUBLIC_APP_URL || '',
+          appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://chamados-3pl.vercel.app',
         })
       } catch (err) {
         console.error('[access-requests PATCH] falha ao enfileirar e-mail de acesso', err)
