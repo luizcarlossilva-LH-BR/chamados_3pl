@@ -11,7 +11,7 @@
  */
 
 import { google } from 'googleapis'
-import type { Ticket, User, AccessRequest, TimelineEvent } from '@/types'
+import type { Ticket, User, AccessRequest, TimelineEvent, EmailQueueItem } from '@/types'
 
 function requireEnv(name: string) {
   const value = process.env[name]
@@ -223,6 +223,14 @@ export async function updateAccessRequest(id: string, status: AccessRequest['sta
   await updateRow('access_requests', rowIdx + 2, [
     existing.id, existing.nome, existing.email, existing.empresa,
     existing.setor, existing.justificativa, status, existing.criadoEm,
+  ])
+}
+
+export async function enqueueAccessEmail(item: Pick<EmailQueueItem, 'nome' | 'email' | 'senha' | 'appUrl'>): Promise<void> {
+  const ids = await readRange('email_queue!A2:A')
+  const id = nextSequentialId(ids.map(r => r[0] || ''), 'EQ', 3)
+  await appendRow('email_queue', [
+    id, item.nome, item.email, item.senha, item.appUrl, 'pendente', '', new Date().toISOString(), '',
   ])
 }
 

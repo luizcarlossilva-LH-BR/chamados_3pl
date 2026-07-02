@@ -17,7 +17,7 @@ type TempCredential = {
   nome: string
   email: string
   senha: string
-  emailEnviado: boolean
+  emailAgendado: boolean
   emailErro?: string
 }
 
@@ -64,7 +64,7 @@ export default function AdminRequestsPage() {
         nome: req?.nome ?? '',
         email: req?.email ?? '',
         senha: data.data.tempSenha,
-        emailEnviado: Boolean(data.data.emailEnviado),
+        emailAgendado: Boolean(data.data.emailAgendado),
         emailErro: data.data.emailErro,
       })
     }
@@ -138,15 +138,15 @@ export default function AdminRequestsPage() {
               </button>
             </div>
 
-            {tempCredential.emailEnviado ? (
+            {tempCredential.emailAgendado ? (
               <p style={{ fontSize: 11, color: 'var(--green)', marginTop: 10 }}>
                 <i className="ti ti-mail-check" style={{ fontSize: 12, marginRight: 4 }}></i>
-                E-mail com os dados de acesso enviado para {tempCredential.email}.
+                E-mail com os dados de acesso agendado para {tempCredential.email} (envio em poucos minutos).
               </p>
             ) : (
               <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 10 }}>
                 <i className="ti ti-alert-triangle" style={{ fontSize: 12, marginRight: 4 }}></i>
-                Não foi possível enviar o e-mail automaticamente. Copie e envie as credenciais manualmente.
+                Não foi possível agendar o envio do e-mail automaticamente. Copie e envie as credenciais manualmente.
               </p>
             )}
           </div>

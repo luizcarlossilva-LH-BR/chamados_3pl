@@ -72,6 +72,19 @@ export interface AccessRequest {
   criadoEm:      string
 }
 
+// ── Email Queue ─────────────────────────────────────────
+export interface EmailQueueItem {
+  id:        string
+  nome:      string
+  email:     string
+  senha:     string
+  appUrl:    string
+  status:    'pendente' | 'enviado' | 'erro'
+  erro:      string
+  criadoEm:  string
+  enviadoEm: string
+}
+
 // ── API responses ──────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   ok:    boolean

@@ -2,9 +2,8 @@ import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getSession, isAdmin } from '@/lib/auth'
-import { getAllAccessRequests, updateAccessRequest, createUser, getUserByEmail } from '@/lib/sheets'
+import { getAllAccessRequests, updateAccessRequest, createUser, getUserByEmail, enqueueAccessEmail } from '@/lib/sheets'
 import { asString } from '@/lib/validation'
-import { sendAccessApprovedEmail } from '@/lib/mailer'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -54,23 +53,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       await updateAccessRequest(id, 'aprovado')
       const { senha: _, ...safeUser } = user
 
-      let emailEnviado = true
+      let emailAgendado = true
       let emailErro: string | undefined
       try {
-        await sendAccessApprovedEmail({
-          to: request.email,
+        await enqueueAccessEmail({
           nome: request.nome,
           email: request.email,
           senha: tempSenha,
           appUrl: process.env.NEXT_PUBLIC_APP_URL || '',
         })
       } catch (err) {
-        console.error('[access-requests PATCH] falha ao enviar e-mail de acesso', err)
-        emailEnviado = false
-        emailErro = 'Não foi possível enviar o e-mail de acesso.'
+        console.error('[access-requests PATCH] falha ao enfileirar e-mail de acesso', err)
+        emailAgendado = false
+        emailErro = 'Não foi possível agendar o envio do e-mail de acesso.'
       }
 
-      return NextResponse.json({ ok: true, data: { user: safeUser, tempSenha, emailEnviado, emailErro } })
+      return NextResponse.json({ ok: true, data: { user: safeUser, tempSenha, emailAgendado, emailErro } })
     }
 
     await updateAccessRequest(id, 'recusado')

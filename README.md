@@ -18,6 +18,7 @@ Google Sheets
   tickets
   users
   access_requests
+  email_queue
 ```
 
 As leituras e escritas usam a Google Sheets API via Service Account. O script em `scripts/apps-script-backend.gs` fica apenas como utilitário para criar as abas e o usuário admin inicial.
@@ -33,24 +34,20 @@ As leituras e escritas usam a Google Sheets API via Service Account. O script em
 7. Preencha:
    - `GOOGLE_SHEETS_ID`
    - `GOOGLE_SERVICE_ACCOUNT_JSON`
-   - `APPS_SCRIPT_EMAIL_URL`
-   - `APPS_SCRIPT_EMAIL_SECRET`
    - `JWT_SECRET`
    - `NEXT_PUBLIC_APP_URL`
 
-## E-mail de acesso (Apps Script)
+## E-mail de acesso (fila via Apps Script)
 
-Ao aprovar uma solicitação de cadastro em `/admin/requests`, o sistema envia automaticamente um e-mail ao solicitante com login e senha temporária, através de um Web App do Google Apps Script (`scripts/apps-script-backend.gs`, função `doPost`). A conta que "Executa" o Web App é quem aparece como remetente — sem precisar de service account, Gmail API ou domain-wide delegation.
+Ao aprovar uma solicitação de cadastro em `/admin/requests`, o Next.js grava uma linha na aba `email_queue` (status `pendente`) usando a mesma Service Account já configurada para o Sheets — nenhuma variável de ambiente extra é necessária. Um gatilho de tempo no Apps Script lê essa fila periodicamente e envia o e-mail via `MailApp`, rodando como o dono do script (ex.: `luiz.carlossilva@shopee.com`).
 
-1. Abra o Apps Script vinculado à planilha (Extensões > Apps Script) e cole a versão atualizada de `scripts/apps-script-backend.gs` (já inclui a função `doPost`).
-2. Em **Configurações do projeto > Propriedades do script**, adicione a propriedade `EMAIL_SECRET` com um valor aleatório longo.
-3. Em **Implantar > Nova implantação > Tipo: Aplicativo da Web**:
-   - Executar como: **Eu** (a conta que deve aparecer como remetente, ex.: `luiz.carlossilva@shopee.com`).
-   - Quem tem acesso: **Qualquer pessoa**.
-4. Copie a URL de implantação (termina em `/exec`) e defina em `APPS_SCRIPT_EMAIL_URL`.
-5. Defina `APPS_SCRIPT_EMAIL_SECRET` com o mesmo valor da propriedade `EMAIL_SECRET` do passo 2 — é o que impede qualquer pessoa que descubra a URL pública de mandar e-mail em nome da conta.
+Esse modelo assíncrono foi escolhido porque a política do Google Workspace da Shopee não permite implantar o Web App do Apps Script como público ("Qualquer pessoa"), o que inviabiliza uma chamada HTTP síncrona do Next.js para o Apps Script.
 
-Sem essas variáveis configuradas, a aprovação continua funcionando normalmente, mas o e-mail não é enviado — a senha temporária continua sendo exibida na tela como alternativa.
+1. Abra o Apps Script vinculado à planilha (Extensões > Apps Script) e cole a versão atualizada de `scripts/apps-script-backend.gs` (já inclui a função `processEmailQueue`).
+2. Execute `setupSheets()` uma vez para criar a aba `email_queue` (ou crie manualmente com as colunas `id, nome, email, senha, appUrl, status, erro, criadoEm, enviadoEm`).
+3. Em **Gatilhos** (ícone de relógio na barra lateral), adicione um gatilho para `processEmailQueue`: origem do evento "Baseado em tempo", tipo "Temporizador por minutos", a cada 1 ou 5 minutos.
+
+O e-mail chega com um pequeno atraso (até a frequência do gatilho), não instantaneamente. Se a gravação na fila falhar por qualquer motivo, a aprovação continua funcionando normalmente — a senha temporária continua sendo exibida na tela como alternativa.
 
 ## Preparar a planilha
 
@@ -119,3 +116,7 @@ npm run lint
 ### `access_requests`
 
 `id`, `nome`, `email`, `empresa`, `setor`, `justificativa`, `status`, `criadoEm`
+
+### `email_queue`
+
+`id`, `nome`, `email`, `senha`, `appUrl`, `status` (`pendente`/`enviado`/`erro`), `erro`, `criadoEm`, `enviadoEm`

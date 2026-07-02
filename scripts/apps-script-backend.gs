@@ -25,6 +25,9 @@ function setupSheets() {
     access_requests: [
       'id','nome','email','empresa','setor','justificativa','status','criadoEm'
     ],
+    email_queue: [
+      'id','nome','email','senha','appUrl','status','erro','criadoEm','enviadoEm'
+    ],
   };
 
   Object.entries(tabs).forEach(([name, headers]) => {
@@ -68,57 +71,63 @@ function doGet() {
 }
 
 /**
- * Envia o e-mail de "acesso liberado" quando uma solicitacao de cadastro
- * e aprovada no Next.js. Protegido por segredo compartilhado (Propriedades
- * do script > EMAIL_SECRET) pois a implantacao precisa ser publica
- * ("Qualquer pessoa") para o backend conseguir chamar sem OAuth.
+ * Processa a fila de e-mails de "acesso liberado".
+ * O Next.js grava uma linha em email_queue (status "pendente") ao aprovar
+ * uma solicitacao de cadastro; esta funcao deve rodar num gatilho de tempo
+ * (Triggers > Adicionar gatilho > processEmailQueue > baseado em tempo,
+ * a cada 1-5 minutos), pois o Workspace da Shopee nao permite implantar
+ * o Web App deste script como publico ("Qualquer pessoa").
  */
-function doPost(e) {
-  try {
-    var payload = JSON.parse(e.postData.contents);
-    var expectedSecret = PropertiesService.getScriptProperties().getProperty('EMAIL_SECRET');
+function processEmailQueue() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = ss.getSheetByName('email_queue');
+  if (!sheet) return;
 
-    if (!expectedSecret || payload.secret !== expectedSecret) {
-      return jsonResponse({ ok: false, error: 'unauthorized' });
+  var rows = sheet.getDataRange().getValues();
+  // Colunas: A id, B nome, C email, D senha, E appUrl, F status, G erro, H criadoEm, I enviadoEm
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    var status = row[5];
+    if (status !== 'pendente') continue;
+
+    var nome = row[1];
+    var email = row[2];
+    var senha = row[3];
+    var appUrl = row[4];
+    var rowNumber = i + 1;
+
+    try {
+      var subject = 'Acesso liberado - 3PL Chamados';
+      var body = [
+        'Ola, ' + nome + '.',
+        '',
+        'Seu cadastro no 3PL Chamados foi aprovado. Seguem os dados de acesso:',
+        '',
+        'Login: ' + email,
+        'Senha temporaria: ' + senha,
+        'Acesse em: ' + appUrl,
+        '',
+        'Recomendamos trocar a senha apos o primeiro acesso.',
+      ].join('\n');
+      var htmlBody = [
+        '<p>Ola, ' + nome + '.</p>',
+        '<p>Seu cadastro no <strong>3PL Chamados</strong> foi aprovado. Seguem os dados de acesso:</p>',
+        '<p>',
+        'Login: <strong>' + email + '</strong><br>',
+        'Senha temporaria: <strong>' + senha + '</strong><br>',
+        'Acesse em: <a href="' + appUrl + '">' + appUrl + '</a>',
+        '</p>',
+        '<p>Recomendamos trocar a senha apos o primeiro acesso.</p>',
+      ].join('');
+
+      MailApp.sendEmail({ to: email, subject: subject, body: body, htmlBody: htmlBody });
+
+      sheet.getRange(rowNumber, 6).setValue('enviado');
+      sheet.getRange(rowNumber, 9).setValue(new Date().toISOString());
+    } catch (err) {
+      sheet.getRange(rowNumber, 6).setValue('erro');
+      sheet.getRange(rowNumber, 7).setValue(String(err));
     }
-
-    var to = payload.to;
-    var nome = payload.nome;
-    var email = payload.email;
-    var senha = payload.senha;
-    var appUrl = payload.appUrl || '';
-
-    if (!to || !nome || !email || !senha) {
-      return jsonResponse({ ok: false, error: 'missing_fields' });
-    }
-
-    var subject = 'Acesso liberado - 3PL Chamados';
-    var body = [
-      'Ola, ' + nome + '.',
-      '',
-      'Seu cadastro no 3PL Chamados foi aprovado. Seguem os dados de acesso:',
-      '',
-      'Login: ' + email,
-      'Senha temporaria: ' + senha,
-      'Acesse em: ' + appUrl,
-      '',
-      'Recomendamos trocar a senha apos o primeiro acesso.',
-    ].join('\n');
-    var htmlBody = [
-      '<p>Ola, ' + nome + '.</p>',
-      '<p>Seu cadastro no <strong>3PL Chamados</strong> foi aprovado. Seguem os dados de acesso:</p>',
-      '<p>',
-      'Login: <strong>' + email + '</strong><br>',
-      'Senha temporaria: <strong>' + senha + '</strong><br>',
-      'Acesse em: <a href="' + appUrl + '">' + appUrl + '</a>',
-      '</p>',
-      '<p>Recomendamos trocar a senha apos o primeiro acesso.</p>',
-    ].join('');
-
-    MailApp.sendEmail({ to: to, subject: subject, body: body, htmlBody: htmlBody });
-    return jsonResponse({ ok: true });
-  } catch (err) {
-    return jsonResponse({ ok: false, error: String(err) });
   }
 }
 
