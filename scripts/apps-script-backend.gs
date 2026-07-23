@@ -8,10 +8,16 @@
  * O backend Next.js le e escreve diretamente via Google Sheets API.
  */
 
-const SHEET_ID = 'SEU_SPREADSHEET_ID_AQUI'; // substitua pelo ID real da planilha
+// Defina em Configuracoes do projeto > Propriedades do script > SHEET_ID
+// (nao commitar o ID real da planilha no codigo-fonte).
+function getSheetId_() {
+  var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  if (!id) throw new Error('Propriedade do script SHEET_ID nao configurada.');
+  return id;
+}
 
 function setupSheets() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SpreadsheetApp.openById(getSheetId_());
 
   const tabs = {
     tickets: [
@@ -79,7 +85,7 @@ function doGet() {
  * o Web App deste script como publico ("Qualquer pessoa").
  */
 function processEmailQueue() {
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var ss = SpreadsheetApp.openById(getSheetId_());
   var sheet = ss.getSheetByName('email_queue');
   if (!sheet) return;
 
