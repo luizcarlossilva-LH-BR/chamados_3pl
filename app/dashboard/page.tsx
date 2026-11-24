@@ -14,6 +14,31 @@ type Ticket = {
   responsavel: string
   criadoEm: string
   atualizadoEm: string
+  timeline?: { tipo: string; ts: string }[]
+}
+
+// Timeline guarda ts em pt-BR ("dd/mm/aaaa, hh:mm"); converte para epoch.
+function parsePtBr(value: string) {
+  const m = value.match(/(\d{2})\/(\d{2})\/(\d{4})(?:[,\s]+(\d{2}):(\d{2}))?/)
+  if (!m) return null
+  return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0)).getTime()
+}
+
+function closedAt(ticket: Ticket) {
+  if (ticket.status !== 'fechado') return null
+  const ev = [...(ticket.timeline || [])].reverse().find(e => e.tipo === 'fechado')
+  return (ev && parsePtBr(ev.ts)) ?? parseDate(ticket.atualizadoEm)
+}
+
+function dayKey(time: number) {
+  const d = new Date(time)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function formatDateTime(value: string) {
+  const time = parseDate(value)
+  if (time === null) return '-'
+  return new Date(time).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 function parseDate(value: string) {
@@ -70,6 +95,22 @@ export default function DashboardPage() {
   const byEmpresa = useMemo(() => topCounts(filteredTickets, ticket => ticket.empresa), [filteredTickets])
   const byResponsavel = useMemo(() => topCounts(filteredTickets, ticket => ticket.responsavel || 'Sem responsavel'), [filteredTickets])
   const byAssunto = useMemo(() => topCounts(filteredTickets, ticket => ticket.categoria || ticket.descricao.slice(0, 28)), [filteredTickets])
+
+  const daily = useMemo(() => {
+    const map = new Map<string, { abertos: number; fechados: number }>()
+    const bump = (time: number | null, field: 'abertos' | 'fechados') => {
+      if (time === null) return
+      const key = dayKey(time)
+      const cur = map.get(key) || { abertos: 0, fechados: 0 }
+      cur[field]++
+      map.set(key, cur)
+    }
+    filteredTickets.forEach(t => {
+      bump(parseDate(t.criadoEm), 'abertos')
+      bump(closedAt(t), 'fechados')
+    })
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).slice(-31)
+  }, [filteredTickets])
 
   const stats = useMemo(() => {
     return {
@@ -149,6 +190,37 @@ export default function DashboardPage() {
 
         {error ? <p className="error">{error}</p> : null}
 
+        <div className="card">
+          <div className="card-title"><i className="ti ti-chart-bar"></i> Chamados abertos e fechados por data</div>
+          {daily.length ? (
+            <>
+              <div style={{ display: 'flex', gap: 14, fontSize: 12, marginBottom: 10 }}>
+                <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#EE4D2D', borderRadius: 2, marginRight: 5 }} />Abertos</span>
+                <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#2E9E5B', borderRadius: 2, marginRight: 5 }} />Fechados</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 190, minWidth: daily.length * 44, paddingTop: 16 }}>
+                  {(() => {
+                    const max = Math.max(...daily.flatMap(([, v]) => [v.abertos, v.fechados]), 1)
+                    return daily.map(([key, v]) => (
+                      <div key={key} style={{ flex: 1, minWidth: 34, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 150 }}>
+                          {([['abertos', '#EE4D2D'], ['fechados', '#2E9E5B']] as const).map(([field, color]) => (
+                            <div key={field} title={`${field}: ${v[field]}`} style={{ width: 14, height: `${(v[field] / max) * 100}%`, minHeight: v[field] ? 3 : 0, background: color, borderRadius: '3px 3px 0 0', position: 'relative' }}>
+                              {v[field] ? <span style={{ position: 'absolute', top: -14, left: 0, right: 0, textAlign: 'center', fontSize: 10 }}>{v[field]}</span> : null}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 10, marginTop: 6, color: 'var(--text3)' }}>{key.slice(8)}/{key.slice(5, 7)}</div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              </div>
+            </>
+          ) : <p className="muted">Sem dados no periodo.</p>}
+        </div>
+
         <div className="two-col">
           <div className="card">
             <div className="card-title"><i className="ti ti-building-warehouse"></i> Numeros por 3PL</div>
@@ -179,12 +251,13 @@ export default function DashboardPage() {
           <div className="table-wrap" style={{ border: 0, borderRadius: 0 }}>
             <table>
               <thead>
-                <tr><th>#</th><th>3PL</th><th>Categoria</th><th>Impacto</th><th>Status</th><th></th></tr>
+                <tr><th>#</th><th>Aberto em</th><th>3PL</th><th>Categoria</th><th>Impacto</th><th>Status</th><th></th></tr>
               </thead>
               <tbody>
                 {filteredTickets.slice(0, 8).map(ticket => (
                   <tr key={ticket.id}>
                     <td><span className="tid">{ticket.id}</span></td>
+                    <td>{formatDateTime(ticket.criadoEm)}</td>
                     <td><span className="cpill">{ticket.empresa}</span></td>
                     <td>{ticket.categoria || '-'}</td>
                     <td><span className={`badge b-${ticket.impacto}`}>{ticket.impacto}</span></td>
@@ -193,7 +266,7 @@ export default function DashboardPage() {
                   </tr>
                 ))}
                 {!loading && filteredTickets.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Nenhum chamado</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Nenhum chamado</td></tr>
                 ) : null}
               </tbody>
             </table>
