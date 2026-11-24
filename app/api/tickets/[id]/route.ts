@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession, isShopeeUser } from '@/lib/auth'
-import { updateTicket, appendTimelineEvent, getAllTickets, getTicketsByEmpresa } from '@/lib/sheets'
+import { applyTicketChange, getAllTickets, getTicketsByEmpresa } from '@/lib/sheets'
 import { asString, isTicketAction } from '@/lib/validation'
 import type { TimelineEvent, TicketStatus } from '@/types'
 
@@ -94,15 +94,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
     }
 
-    let ticket = await appendTimelineEvent(id, event!)
+    const ticket = await applyTicketChange(id, event!, {
+      ...(newStatus ? { status: newStatus } : {}),
+      ...extraPatch,
+    })
     if (!ticket) return NextResponse.json({ ok: false, error: 'Chamado não encontrado.' }, { status: 404 })
-
-    if (newStatus || Object.keys(extraPatch).length) {
-      ticket = await updateTicket(id, {
-        ...(newStatus ? { status: newStatus } : {}),
-        ...extraPatch,
-      })
-    }
 
     return NextResponse.json({ ok: true, data: ticket })
   } catch (err) {

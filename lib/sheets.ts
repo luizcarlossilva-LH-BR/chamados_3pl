@@ -46,17 +46,36 @@ async function readRange(range: string): Promise<string[][]> {
 
 async function appendRow(sheetName: string, values: string[]) {
   const sheets = getSheetsClient()
-  await sheets.spreadsheets.values.append({
+  // INSERT_ROWS: sempre insere uma linha nova, nunca sobrescreve dados existentes
+  // (o padrao OVERWRITE pode gravar sobre linhas apos lacunas/filtros na aba).
+  const res = await sheets.spreadsheets.values.append({
     spreadsheetId: getSheetId(),
-    range: `${sheetName}!A1`,
+    range: `${sheetName}!A:A`,
     valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [values] },
   })
+  console.log(`[sheets] append ${sheetName} -> ${res.data.updates?.updatedRange}`)
+}
+
+function columnLetter(n: number) {
+  let s = ''
+  while (n > 0) {
+    const m = (n - 1) % 26
+    s = String.fromCharCode(65 + m) + s
+    n = Math.floor((n - 1) / 26)
+  }
+  return s
 }
 
 async function updateRow(sheetName: string, rowIndex: number, values: string[]) {
   const sheets = getSheetsClient()
-  const colLast = String.fromCharCode(64 + values.length)
+  // Garante que a linha ainda pertence ao mesmo registro antes de sobrescrever.
+  const current = await readRange(`${sheetName}!A${rowIndex}:A${rowIndex}`)
+  if ((current[0]?.[0] || '') !== values[0]) {
+    throw new Error(`Conflito de escrita em ${sheetName}!A${rowIndex}: linha mudou (esperado ${values[0]}).`)
+  }
+  const colLast = columnLetter(values.length)
   await sheets.spreadsheets.values.update({
     spreadsheetId: getSheetId(),
     range: `${sheetName}!A${rowIndex}:${colLast}${rowIndex}`,
@@ -138,6 +157,24 @@ export async function appendTimelineEvent(ticketId: string, event: TimelineEvent
   ticket.atualizadoEm = new Date().toISOString()
   await updateRow('tickets', rowIdx + 2, ticketToRow(ticket))
   return ticket
+}
+
+export async function applyTicketChange(
+  id: string,
+  event: TimelineEvent,
+  patch: Partial<Ticket> = {},
+): Promise<Ticket | null> {
+  const rows = await readRange('tickets!A2:T')
+  const rowIdx = rows.findIndex(r => r[0] === id)
+  if (rowIdx === -1) return null
+  const existing = rowToTicket(rows[rowIdx], rowIdx + 2)
+  const updated: Ticket = {
+    ...existing,
+    ...patch,
+    timeline: [...existing.timeline, event],
+  }
+  await updateRow('tickets', rowIdx + 2, ticketToRow(updated))
+  return updated
 }
 
 function rowToUser(row: string[]): User {
